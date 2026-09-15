@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.24)
-project(GitarGame VERSION 0.1.3 LANGUAGES CXX)
+project(GitarGame VERSION 0.1.4 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
+include(CTest)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -24,13 +25,13 @@ if (WIN32)
     set(GITARGAME_SOURCE "${GITARGAME_GENERATED_DIR}/main_v3.cpp")
     execute_process(
         COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass
-            -File "${CMAKE_SOURCE_DIR}/tools/prepare_alpha5.ps1"
+            -File "${CMAKE_SOURCE_DIR}/tools/prepare_alpha7.ps1"
             -InputPath "${CMAKE_SOURCE_DIR}/src/main_v3.cpp"
             -OutputPath "${GITARGAME_SOURCE}"
         RESULT_VARIABLE GITARGAME_PREPARE_RESULT
     )
     if (NOT GITARGAME_PREPARE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to prepare the Windows alpha.6 source")
+        message(FATAL_ERROR "Failed to prepare the Windows alpha.7 source")
     endif()
 endif()
 
@@ -57,3 +58,14 @@ endif()
 set_target_properties(GitarGame PROPERTIES
     OUTPUT_NAME "GitarGame"
 )
+
+if (BUILD_TESTING)
+    add_executable(GitarGameChartTests tests/chart_engine_tests.cpp)
+    target_include_directories(GitarGameChartTests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+    if (MSVC)
+        target_compile_options(GitarGameChartTests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(GitarGameChartTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME chart-compatibility COMMAND GitarGameChartTests)
+endif()
