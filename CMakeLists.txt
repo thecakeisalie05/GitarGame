@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(GitarGame VERSION 0.1.1 LANGUAGES CXX)
+project(GitarGame VERSION 0.1.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,7 +19,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 add_executable(GitarGame
-    src/main_v2.cpp
+    src/main_v3.cpp
 )
 
 target_precompile_headers(GitarGame PRIVATE src/preinclude.h)
@@ -27,7 +27,7 @@ target_link_libraries(GitarGame PRIVATE raylib)
 
 if (WIN32)
     target_compile_definitions(GitarGame PRIVATE WIN32_LEAN_AND_MEAN NOGDI NOUSER NOMINMAX _CRT_SECURE_NO_WARNINGS)
-    target_link_libraries(GitarGame PRIVATE Xinput9_1_0 winmm dbghelp)
+    target_link_libraries(GitarGame PRIVATE Xinput9_1_0 winmm dbghelp ole32 shell32 uuid)
 endif()
 
 if (MSVC)
