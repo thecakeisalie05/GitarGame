@@ -6,6 +6,43 @@
 #include <windows.h>
 #include <Xinput.h>
 #include <dbghelp.h>
+
+// The core build normally suppresses Win32 USER/GDI declarations because a
+// few of their global identifiers collide with raylib. Alpha.5 needs the
+// shell COM interfaces for the native folder picker, so include the missing
+// Windows layers manually while temporarily renaming the handful of true
+// collisions. The Windows generic-name macros are then removed so application
+// code continues to resolve DrawText/LoadImage/PlaySound to raylib.
+#ifdef NOUSER
+#undef NOUSER
+#endif
+#ifdef NOGDI
+#undef NOGDI
+#endif
+#define CloseWindow GG_Win32_CloseWindow
+#define ShowCursor GG_Win32_ShowCursor
+#define Rectangle GG_Win32_Rectangle
+#include <winuser.h>
+#include <wingdi.h>
+#include <commctrl.h>
+#include <mmsystem.h>
+#include <objbase.h>
+#include <shobjidl.h>
+#undef CloseWindow
+#undef ShowCursor
+#undef Rectangle
+#ifdef DrawText
+#undef DrawText
+#endif
+#ifdef DrawTextEx
+#undef DrawTextEx
+#endif
+#ifdef LoadImage
+#undef LoadImage
+#endif
+#ifdef PlaySound
+#undef PlaySound
+#endif
 #endif
 
 #include <algorithm>
