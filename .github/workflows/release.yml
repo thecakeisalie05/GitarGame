@@ -1,0 +1,68 @@
+name: Build and Release Alpha
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item build/Release/GitarGame.exe dist/GitarGame.exe
+          Copy-Item config.example.ini dist/config.example.ini
+          Copy-Item README.md dist/README.md
+          Compress-Archive -Path dist/GitarGame.exe,dist/config.example.ini,dist/README.md -DestinationPath dist/GitarGame-v0.1.0-alpha.1-win64.zip -Force
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GitarGame-v0.1.0-alpha.1-win64
+          path: |
+            dist/GitarGame.exe
+            dist/config.example.ini
+            dist/README.md
+            dist/GitarGame-v0.1.0-alpha.1-win64.zip
+
+      - name: Publish alpha release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.0-alpha.1
+          name: GitarGame v0.1.0-alpha.1
+          prerelease: true
+          make_latest: false
+          body: |
+            First playable GitarGame alpha.
+
+            Included now:
+            - ExpertSingle .chart playback
+            - Multi-stem OGG/MP3/WAV/FLAC audio
+            - Basic chords, sustains, HOPOs, forced notes, and taps
+            - XInput controller binding wizard and diagnostics
+            - Independent configurable XInput polling thread
+            - Configurable highway speed/length, color scheme, directories, FPS, hit window, volume, and offset
+            - Recursive Clone Hero-style song library scanning
+
+            Known alpha limitations:
+            - XInput is the first controller backend; Raw Input/HID is next
+            - notes.mid, open notes, star-power/whammy gameplay, practice mode, and exact Clone Hero edge-case semantics are not implemented yet
+          files: |
+            dist/GitarGame.exe
+            dist/config.example.ini
+            dist/GitarGame-v0.1.0-alpha.1-win64.zip
