@@ -31,53 +31,55 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.4-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.5-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.4-win64
+          name: GitarGame-v0.1.0-alpha.5-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.4-win64.zip
+            dist/GitarGame-v0.1.0-alpha.5-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.4
-          name: GitarGame v0.1.0-alpha.4
+          tag_name: v0.1.0-alpha.5
+          name: GitarGame v0.1.0-alpha.5
           prerelease: true
           make_latest: false
           body: |
-            Timing and highway-rendering follow-up.
+            QoL/UI-focused alpha.
 
-            Changes in alpha.4:
-            - Uses audio playback as the master gameplay clock
-            - Parses .chart [Song] Offset in seconds
-            - Corrects song.ini delay sign semantics (positive delay = later notes)
-            - User audio_offset_ms now has explicit calibration semantics: positive = later notes
-            - F7/F8 adjust calibration by 5 ms; hold Shift for 25 ms; F9 resets
-            - HUD shows raw audio time, corrected chart time, chart Offset, song.ini delay, and calibration
-            - Logs timing-map values on song load/reload
-            - Replaces the flat highway with a lightweight real perspective 3D highway
-            - 3D road uses only a pair of triangles, simple lane lines, low-poly note discs, and boxes for sustains
-            - Existing highway_speed and highway_length settings control the 3D highway
-            - Retains alpha.3 Unicode filesystem fix, persistent logs, crash dumps, and PDB symbols
+            Changes in alpha.5:
+            - Fixes the mirrored/reversed visible lane color order on the 3D highway
+            - Adds a main menu and a real pause menu
+            - Adds guitar-driven menu navigation: strum up/down, green select, red back, yellow/blue adjust
+            - Adds an in-game settings system with Gameplay, Audio & Timing, Video, Appearance, Input, and Song Library categories
+            - Adds live highway speed/length, hit window, volume, timing, FPS, polling, note-size, FOV, and highway-width controls
+            - Adds palette presets plus individual per-lane color selection
+            - Adds toggles for depth guides, album art, fullscreen, FPS display, and input diagnostics
+            - Adds a native Windows folder picker for choosing the song library
+            - Adds a click-based calibration tool that collects multiple strum samples and suggests a timing offset
+            - Adds album/cover artwork loading from common song-folder filenames
+            - Adds album, year, genre, and charter metadata to the song browser
+            - Reworks the song browser into a list + selected-song detail/art panel
+            - Adds persistent ui.ini presentation settings beside config.ini
+            - Keeps the audio-clock timing fixes, Unicode song-library fix, crash logs/dumps, and PDB symbols
 
-            Existing alpha functionality:
-            - ExpertSingle .chart playback
-            - Multi-stem OGG/MP3/WAV/FLAC audio
-            - Basic chords, sustains, HOPOs, forced notes, and taps
-            - XInput controller binding wizard and diagnostics
-            - Independent configurable XInput polling thread
-            - Configurable colors, song directory, FPS, polling, hit window, volume, and offsets
+            Guitar UI defaults:
+            - Strum: move up/down
+            - Green: select
+            - Red: back
+            - Yellow/Blue: decrease/increase
+            - Start: pause during gameplay
 
-            If timing is still wrong for a specific chart, send its visible Offset/delay values from the HUD or GitarGame.log.
+            This remains an early alpha: the UI is intentionally lightweight and the gameplay engine is still ExpertSingle .chart focused.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.4-win64.zip
+            dist/GitarGame-v0.1.0-alpha.5-win64.zip
