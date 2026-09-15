@@ -31,35 +31,41 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.3-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.4-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.3-win64
+          name: GitarGame-v0.1.0-alpha.4-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.3-win64.zip
+            dist/GitarGame-v0.1.0-alpha.4-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.3
-          name: GitarGame v0.1.0-alpha.3
+          tag_name: v0.1.0-alpha.4
+          name: GitarGame v0.1.0-alpha.4
           prerelease: true
           make_latest: false
           body: |
-            Unicode filesystem crash fix based on the alpha.2 user crash dump.
+            Timing and highway-rendering follow-up.
 
-            Changes in alpha.3:
-            - Forces the MSVC filesystem narrow-conversion locale to UTF-8 before main()
-            - Fixes startup crashes when recursive song scanning encounters filenames that cannot be represented by the legacy Windows ANSI code page
-            - Specifically addresses std::system_error / Win32 ERROR_NO_UNICODE_TRANSLATION (1113)
-            - Retains persistent GitarGame.log and GitarGame-crash.dmp diagnostics
-            - Retains PDB symbols in the portable package for dump analysis
+            Changes in alpha.4:
+            - Uses audio playback as the master gameplay clock
+            - Parses .chart [Song] Offset in seconds
+            - Corrects song.ini delay sign semantics (positive delay = later notes)
+            - User audio_offset_ms now has explicit calibration semantics: positive = later notes
+            - F7/F8 adjust calibration by 5 ms; hold Shift for 25 ms; F9 resets
+            - HUD shows raw audio time, corrected chart time, chart Offset, song.ini delay, and calibration
+            - Logs timing-map values on song load/reload
+            - Replaces the flat highway with a lightweight real perspective 3D highway
+            - 3D road uses only a pair of triangles, simple lane lines, low-poly note discs, and boxes for sustains
+            - Existing highway_speed and highway_length settings control the 3D highway
+            - Retains alpha.3 Unicode filesystem fix, persistent logs, crash dumps, and PDB symbols
 
             Existing alpha functionality:
             - ExpertSingle .chart playback
@@ -67,12 +73,11 @@ jobs:
             - Basic chords, sustains, HOPOs, forced notes, and taps
             - XInput controller binding wizard and diagnostics
             - Independent configurable XInput polling thread
-            - Configurable highway speed/length, color scheme, directories, FPS, hit window, volume, and offset
-            - Recursive Clone Hero-style song library scanning
+            - Configurable colors, song directory, FPS, polling, hit window, volume, and offsets
 
-            If this build still crashes, send GitarGame.log and GitarGame-crash.dmp.
+            If timing is still wrong for a specific chart, send its visible Offset/delay values from the HUD or GitarGame.log.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.3-win64.zip
+            dist/GitarGame-v0.1.0-alpha.4-win64.zip
