@@ -12,6 +12,7 @@
 #include <atomic>
 #include <cctype>
 #include <chrono>
+#include <clocale>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
@@ -124,8 +125,16 @@ inline LONG WINAPI unhandledExceptionFilter(EXCEPTION_POINTERS* info) noexcept {
 struct DiagnosticsInstall {
     DiagnosticsInstall() noexcept {
         SetUnhandledExceptionFilter(unhandledExceptionFilter);
+
+        // MSVC std::filesystem::path::string() uses the active C locale code page.
+        // Force UTF-8 before main() so Unicode song/file names cannot raise
+        // ERROR_NO_UNICODE_TRANSLATION (1113) during recursive library scans.
+        const char* locale = std::setlocale(LC_CTYPE, ".UTF-8");
+        if (!locale) locale = std::setlocale(LC_CTYPE, ".UTF8");
+
         log("============================================================");
         log("GitarGame process starting");
+        log(locale ? std::string("LC_CTYPE: ") + locale : "LC_CTYPE UTF-8 setup failed; using process default");
         log(std::string("Executable: ") + executablePath());
         char cwd[32768]{};
         const DWORD len = GetCurrentDirectoryA(static_cast<DWORD>(sizeof(cwd)), cwd);
