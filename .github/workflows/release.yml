@@ -31,36 +31,35 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.2-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.3-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.2-win64
+          name: GitarGame-v0.1.0-alpha.3-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.2-win64.zip
+            dist/GitarGame-v0.1.0-alpha.3-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.2
-          name: GitarGame v0.1.0-alpha.2
+          tag_name: v0.1.0-alpha.3
+          name: GitarGame v0.1.0-alpha.3
           prerelease: true
           make_latest: false
           body: |
-            Diagnostic/stability follow-up to the first playable alpha.
+            Unicode filesystem crash fix based on the alpha.2 user crash dump.
 
-            Changes in alpha.2:
-            - Persistent GitarGame.log beside the executable
-            - Windows unhandled-exception logging with exception code, address, and module RVA
-            - Automatic GitarGame-crash.dmp generation on native crashes
-            - Debug symbols included in the portable package for crash diagnosis
-            - Startup instrumentation around window, FPS, audio, XInput, and first-frame initialization
-            - Failed audio initialization now skips master-volume setup instead of assuming the backend is valid
+            Changes in alpha.3:
+            - Forces the MSVC filesystem narrow-conversion locale to UTF-8 before main()
+            - Fixes startup crashes when recursive song scanning encounters filenames that cannot be represented by the legacy Windows ANSI code page
+            - Specifically addresses std::system_error / Win32 ERROR_NO_UNICODE_TRANSLATION (1113)
+            - Retains persistent GitarGame.log and GitarGame-crash.dmp diagnostics
+            - Retains PDB symbols in the portable package for dump analysis
 
             Existing alpha functionality:
             - ExpertSingle .chart playback
@@ -71,9 +70,9 @@ jobs:
             - Configurable highway speed/length, color scheme, directories, FPS, hit window, volume, and offset
             - Recursive Clone Hero-style song library scanning
 
-            If it still crashes, send GitarGame.log. If GitarGame-crash.dmp also exists, send that too.
+            If this build still crashes, send GitarGame.log and GitarGame-crash.dmp.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.2-win64.zip
+            dist/GitarGame-v0.1.0-alpha.3-win64.zip
