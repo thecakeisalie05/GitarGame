@@ -1,3 +1,5 @@
+#include <bit>
+#include <cctype>
 #include "chart_engine.h"
 
 #include <cassert>
@@ -97,7 +99,7 @@ int main() {
         assert(chart->notes[0].forced);
         assert(chart->notes[1].tap);
         assert(chart->notes[1].hopo);
-        assert(!chart->notes[2].hopo); // 66 ticks from prior note, beyond the exact 65-tick threshold at 192 PPQN.
+        assert(!chart->notes[2].hopo);
     }
 
     {
