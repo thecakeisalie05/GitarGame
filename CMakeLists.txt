@@ -18,7 +18,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(raylib)
 
-add_executable(GitarGame WIN32
+add_executable(GitarGame
     src/main.cpp
 )
 
