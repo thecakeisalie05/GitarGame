@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(GitarGame VERSION 0.1.0 LANGUAGES CXX)
+project(GitarGame VERSION 0.1.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,11 +27,12 @@ target_link_libraries(GitarGame PRIVATE raylib)
 
 if (WIN32)
     target_compile_definitions(GitarGame PRIVATE WIN32_LEAN_AND_MEAN NOGDI NOUSER NOMINMAX _CRT_SECURE_NO_WARNINGS)
-    target_link_libraries(GitarGame PRIVATE Xinput9_1_0 winmm)
+    target_link_libraries(GitarGame PRIVATE Xinput9_1_0 winmm dbghelp)
 endif()
 
 if (MSVC)
-    target_compile_options(GitarGame PRIVATE /W4 /permissive-)
+    target_compile_options(GitarGame PRIVATE /W4 /permissive- /Zi)
+    target_link_options(GitarGame PRIVATE /DEBUG /OPT:REF /OPT:ICF)
 else()
     target_compile_options(GitarGame PRIVATE -Wall -Wextra -Wpedantic)
 endif()
