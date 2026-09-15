@@ -26,7 +26,7 @@ target_precompile_headers(GitarGame PRIVATE src/preinclude.h)
 target_link_libraries(GitarGame PRIVATE raylib)
 
 if (WIN32)
-    target_compile_definitions(GitarGame PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(GitarGame PRIVATE WIN32_LEAN_AND_MEAN NOGDI NOUSER NOMINMAX _CRT_SECURE_NO_WARNINGS)
     target_link_libraries(GitarGame PRIVATE Xinput9_1_0 winmm)
 endif()
 
