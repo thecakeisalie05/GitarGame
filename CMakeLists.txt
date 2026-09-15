@@ -22,6 +22,7 @@ add_executable(GitarGame
     src/main.cpp
 )
 
+target_precompile_headers(GitarGame PRIVATE src/preinclude.h)
 target_link_libraries(GitarGame PRIVATE raylib)
 
 if (WIN32)
