@@ -26,31 +26,43 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item build/Release/GitarGame.exe dist/GitarGame.exe
+          if (Test-Path build/Release/GitarGame.pdb) { Copy-Item build/Release/GitarGame.pdb dist/GitarGame.pdb }
           Copy-Item config.example.ini dist/config.example.ini
           Copy-Item README.md dist/README.md
-          Compress-Archive -Path dist/GitarGame.exe,dist/config.example.ini,dist/README.md -DestinationPath dist/GitarGame-v0.1.0-alpha.1-win64.zip -Force
+          $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
+          if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.2-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.1-win64
+          name: GitarGame-v0.1.0-alpha.2-win64
           path: |
             dist/GitarGame.exe
+            dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.1-win64.zip
+            dist/GitarGame-v0.1.0-alpha.2-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.1
-          name: GitarGame v0.1.0-alpha.1
+          tag_name: v0.1.0-alpha.2
+          name: GitarGame v0.1.0-alpha.2
           prerelease: true
           make_latest: false
           body: |
-            First playable GitarGame alpha.
+            Diagnostic/stability follow-up to the first playable alpha.
 
-            Included now:
+            Changes in alpha.2:
+            - Persistent GitarGame.log beside the executable
+            - Windows unhandled-exception logging with exception code, address, and module RVA
+            - Automatic GitarGame-crash.dmp generation on native crashes
+            - Debug symbols included in the portable package for crash diagnosis
+            - Startup instrumentation around window, FPS, audio, XInput, and first-frame initialization
+            - Failed audio initialization now skips master-volume setup instead of assuming the backend is valid
+
+            Existing alpha functionality:
             - ExpertSingle .chart playback
             - Multi-stem OGG/MP3/WAV/FLAC audio
             - Basic chords, sustains, HOPOs, forced notes, and taps
@@ -59,10 +71,9 @@ jobs:
             - Configurable highway speed/length, color scheme, directories, FPS, hit window, volume, and offset
             - Recursive Clone Hero-style song library scanning
 
-            Known alpha limitations:
-            - XInput is the first controller backend; Raw Input/HID is next
-            - notes.mid, open notes, star-power/whammy gameplay, practice mode, and exact Clone Hero edge-case semantics are not implemented yet
+            If it still crashes, send GitarGame.log. If GitarGame-crash.dmp also exists, send that too.
           files: |
             dist/GitarGame.exe
+            dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.1-win64.zip
+            dist/GitarGame-v0.1.0-alpha.2-win64.zip
