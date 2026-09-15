@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(GitarGame VERSION 0.1.2 LANGUAGES CXX)
+project(GitarGame VERSION 0.1.3 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,7 +30,7 @@ if (WIN32)
         RESULT_VARIABLE GITARGAME_PREPARE_RESULT
     )
     if (NOT GITARGAME_PREPARE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to prepare the Windows alpha.5 source")
+        message(FATAL_ERROR "Failed to prepare the Windows alpha.6 source")
     endif()
 endif()
 

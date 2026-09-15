@@ -31,55 +31,41 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.5-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.6-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.5-win64
+          name: GitarGame-v0.1.0-alpha.6-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.5-win64.zip
+            dist/GitarGame-v0.1.0-alpha.6-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.5
-          name: GitarGame v0.1.0-alpha.5
+          tag_name: v0.1.0-alpha.6
+          name: GitarGame v0.1.0-alpha.6
           prerelease: true
           make_latest: false
           body: |
-            QoL/UI-focused alpha.
+            Timing-compatibility hotfix focused on chart/audio desync that only appears on some song packs.
 
-            Changes in alpha.5:
-            - Fixes the mirrored/reversed visible lane color order on the 3D highway
-            - Adds a main menu and a real pause menu
-            - Adds guitar-driven menu navigation: strum up/down, green select, red back, yellow/blue adjust
-            - Adds an in-game settings system with Gameplay, Audio & Timing, Video, Appearance, Input, and Song Library categories
-            - Adds live highway speed/length, hit window, volume, timing, FPS, polling, note-size, FOV, and highway-width controls
-            - Adds palette presets plus individual per-lane color selection
-            - Adds toggles for depth guides, album art, fullscreen, FPS display, and input diagnostics
-            - Adds a native Windows folder picker for choosing the song library
-            - Adds a click-based calibration tool that collects multiple strum samples and suggests a timing offset
-            - Adds album/cover artwork loading from common song-folder filenames
-            - Adds album, year, genre, and charter metadata to the song browser
-            - Reworks the song browser into a list + selected-song detail/art panel
-            - Adds persistent ui.ini presentation settings beside config.ini
-            - Keeps the audio-clock timing fixes, Unicode song-library fix, crash logs/dumps, and PDB symbols
+            Changes in alpha.6:
+            - Gameplay time now advances from a monotonic high-resolution steady clock instead of trusting decoder frame progress as the master rhythm clock
+            - Pause/resume and restart explicitly pause/reset the gameplay clock with the audio transport
+            - GetMusicTimePlayed is retained as a diagnostic only; GitarGame.log records decoder-vs-realtime drift every five seconds
+            - Adds compatibility handling for legacy song.ini delay values written as fractional seconds instead of documented milliseconds
+            - Integer song.ini delay values continue to use documented millisecond semantics
+            - Logs raw and normalized song delay, detected delay units, chart resolution, tempo-event count, note count, and first/last note times on song load
+            - Retains alpha.5 menus, calibration, guitar navigation, song artwork, settings, 3D highway, Unicode fixes, crash dumps, and PDB symbols
 
-            Guitar UI defaults:
-            - Strum: move up/down
-            - Green: select
-            - Red: back
-            - Yellow/Blue: decrease/increase
-            - Start: pause during gameplay
-
-            This remains an early alpha: the UI is intentionally lightweight and the gameplay engine is still ExpertSingle .chart focused.
+            This build specifically targets reports where one chart drifts or appears slower than its audio while other charts stay synchronized. If a song still drifts, attach GitarGame.log; the new diagnostics should distinguish chart-map errors from decoder-clock drift.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.5-win64.zip
+            dist/GitarGame-v0.1.0-alpha.6-win64.zip
