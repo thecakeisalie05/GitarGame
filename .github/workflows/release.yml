@@ -21,6 +21,9 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
+      - name: Chart compatibility tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
       - name: Package
         shell: pwsh
         run: |
@@ -31,41 +34,63 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.6-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.7-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.6-win64
+          name: GitarGame-v0.1.0-alpha.7-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.6-win64.zip
+            dist/GitarGame-v0.1.0-alpha.7-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.6
-          name: GitarGame v0.1.0-alpha.6
+          tag_name: v0.1.0-alpha.7
+          name: GitarGame v0.1.0-alpha.7
           prerelease: true
           make_latest: false
           body: |
-            Timing-compatibility hotfix focused on chart/audio desync that only appears on some song packs.
+            Chart compatibility / verification / gameplay-feedback overhaul.
 
-            Changes in alpha.6:
-            - Gameplay time now advances from a monotonic high-resolution steady clock instead of trusting decoder frame progress as the master rhythm clock
-            - Pause/resume and restart explicitly pause/reset the gameplay clock with the audio transport
-            - GetMusicTimePlayed is retained as a diagnostic only; GitarGame.log records decoder-vs-realtime drift every five seconds
-            - Adds compatibility handling for legacy song.ini delay values written as fractional seconds instead of documented milliseconds
-            - Integer song.ini delay values continue to use documented millisecond semantics
-            - Logs raw and normalized song delay, detected delay units, chart resolution, tempo-event count, note count, and first/last note times on song load
-            - Retains alpha.5 menus, calibration, guitar navigation, song artwork, settings, 3D highway, Unicode fixes, crash dumps, and PDB symbols
+            Chart layer:
+            - Replaces the original ad-hoc .chart parser with a dedicated compatibility engine
+            - Handles UTF-8 BOMs before the [Song] section so Resolution and Offset are not silently lost
+            - Uses the documented BPM x1000 format and full piecewise tempo map
+            - Uses the exact Clone Hero-style .chart natural-HOPO threshold: floor((65/192) * resolution)
+            - Parses forced notes, taps, open notes, per-lane extended sustains, Star Power phrases and time signatures
+            - Modifier-only ticks no longer risk becoming playable note events
+            - Supports fallback five-fret guitar sections when ExpertSingle is absent
+            - Collapses duplicate BPM events at a tick deterministically and inserts a 120 BPM fallback only when required
+            - Adds chart/audio duration sanity checks and conservative recovery for charts genuinely missing Resolution
+            - Logs parser/verification warnings, selected track, resolution, BPM-event count, note count, SP phrase count and chart/audio duration
+            - Adds regression tests for BPM changes, BOM + non-192 resolution, modifiers, HOPO boundaries, open notes, Star Power and track fallback
 
-            This build specifically targets reports where one chart drifts or appears slower than its audio while other charts stay synchronized. If a song still drifts, attach GitarGame.log; the new diagnostics should distinguish chart-map errors from decoder-clock drift.
+            Timing:
+            - Reverts the alpha.6 pure wall-clock experiment
+            - Decoder/audio progress is the long-term playback authority again
+            - Adds only up to 20 ms of interpolation between decoder updates for visual smoothness, preventing accumulated chart-speed drift
+            - Retains chart Offset, song.ini delay compatibility and user calibration as fixed offsets
+
+            Gameplay / visuals:
+            - Hit notes and misses now have distinct visual states
+            - Missed gems remain briefly as red ghosts instead of disappearing instantly
+            - Adds PERFECT / GREAT / GOOD / MISS / OVERSTRUM feedback with hit timing in milliseconds
+            - Adds a graphical accuracy bar with hit/miss counts
+            - Adds a graphical ROCK meter that rises/falls with performance
+            - Parses and displays Star Power meter progress; successful phrases award meter and the configured Star Power control can activate it
+            - Active Star Power visually tints the highway and doubles base note scoring
+            - Adds chart verification status to the gameplay HUD
+            - Displays selected chart section, resolution and tempo-event count while playing
+            - Adds rendering for five-fret open notes and per-lane sustain lengths
+
+            Existing alpha.5 QoL menus, guitar navigation, calibration, artwork, customization, Unicode filesystem fixes, logging and crash dumps remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.6-win64.zip
+            dist/GitarGame-v0.1.0-alpha.7-win64.zip
