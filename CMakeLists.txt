@@ -19,7 +19,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 add_executable(GitarGame
-    src/main.cpp
+    src/main_v2.cpp
 )
 
 target_precompile_headers(GitarGame PRIVATE src/preinclude.h)
