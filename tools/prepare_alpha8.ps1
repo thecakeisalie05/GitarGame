@@ -6,11 +6,14 @@ param(
 $ErrorActionPreference = 'Stop'
 $alpha7 = Join-Path $PSScriptRoot 'prepare_alpha7.ps1'
 & $alpha7 -InputPath $InputPath -OutputPath $OutputPath
-if ($LASTEXITCODE -ne 0) { throw 'alpha.7 source preparation failed before alpha.8 visual patching' }
 
 $text = [System.IO.File]::ReadAllText($OutputPath)
 $text = $text.Replace('v0.1.0-alpha.7', 'v0.1.0-alpha.8')
-$text = $text.Replace('#include <numeric>', "#include <numeric>`r`n#include \"highway_grid.h\"")
+$includeReplacement = @'
+#include <numeric>
+#include "highway_grid.h"
+'@
+$text = $text.Replace('#include <numeric>', $includeReplacement.Trim())
 
 # Restart transport guard ----------------------------------------------------
 # raylib can briefly report the pre-seek decoder position on the frame immediately
@@ -138,22 +141,16 @@ $gemReplacement = @'
             if (n.missed) {
                 drawDisc3DV5({laneX(lane), 0.07f, z}, radius, 0.115f, 12, c);
             } else if (n.tap) {
-                // Tap: bright full cap with a colored core. Deliberately the most
-                // luminous gem so it cannot be confused with an ordinary HOPO.
                 Color tapOuter{235, 248, 255, static_cast<unsigned char>(n.hit ? 75 : 255)};
                 drawDisc3DV5({laneX(lane), 0.075f, z}, radius * 0.92f, 0.105f, 14, tapOuter);
                 drawDisc3DV5({laneX(lane), 0.190f, z}, radius * 0.47f, 0.028f, 14, c);
                 DrawCylinderWires({laneX(lane), 0.195f, z}, radius * 0.50f, radius * 0.50f, 0.032f, 14, alphaColor(RAYWHITE, n.hit ? 65 : 235));
             } else if (n.hopo) {
-                // HOPO: smaller raised colored face inside a very obvious pale rim.
-                // The silhouette is different from the full-width solid strum gem,
-                // so it remains readable even at the far end of the highway.
                 Color rim{225, 235, 245, static_cast<unsigned char>(n.hit ? 65 : 245)};
                 drawDisc3DV5({laneX(lane), 0.072f, z}, radius * 0.86f, 0.095f, 14, rim);
                 drawDisc3DV5({laneX(lane), 0.178f, z}, radius * 0.55f, 0.035f, 14, c);
                 DrawCylinderWires({laneX(lane), 0.181f, z}, radius * 0.58f, radius * 0.58f, 0.040f, 14, alphaColor(RAYWHITE, n.hit ? 55 : 215));
             } else {
-                // Ordinary strum note: broad solid lane-colored puck.
                 drawDisc3DV5({laneX(lane), 0.07f, z}, radius, 0.115f, 12, c);
                 Color shine = alphaColor(RAYWHITE, n.hit ? 20 : 65);
                 drawDisc3DV5({laneX(lane), 0.188f, z}, radius * 0.18f, 0.018f, 10, shine);
