@@ -34,59 +34,39 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.9-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.10-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.9-win64
+          name: GitarGame-v0.1.0-alpha.10-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.9-win64.zip
+            dist/GitarGame-v0.1.0-alpha.10-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.9
-          name: GitarGame v0.1.0-alpha.9
+          tag_name: v0.1.0-alpha.10
+          name: GitarGame v0.1.0-alpha.10
           prerelease: true
           make_latest: false
           body: |
-            Song-library compatibility and clean-install defaults overhaul.
+            Fullscreen folder-picker focus fix on top of alpha.9.
 
-            Song discovery / chart compatibility:
-            - Song scanning recognizes notes.chart, notes.mid and notes.midi recursively
-            - Folders containing both formats prefer notes.chart deterministically
-            - Adds native Standard MIDI File type 0/1 parsing with PPQN timing
-            - Normalizes PART GUITAR / T1 GEMS Expert five-fret MIDI into the same ChartData used by .chart
-            - Reads MIDI tempo changes and time signatures into the existing verified timing map
-            - Supports Expert open notes (95), five fret gems (96-100), force-HOPO (101), force-strum (102), tap markers (104) and Star Power phrases (116)
-            - Adds an in-CI synthetic MIDI regression fixture covering tempo changes, forced HOPO/strum, taps and Star Power
+            Folder picker behavior:
+            - Fullscreen GitarGame temporarily minimizes before the songs-folder dialog opens
+            - The WinForms folder chooser is owned by an invisible topmost window so it cannot render behind the game
+            - GitarGame restores and explicitly reclaims focus after either selecting a folder or cancelling
+            - Windowed mode stays visible while the picker is open, with the chooser still forced above it
+            - Folder-picker open/restore/selection events are written to GitarGame.log for diagnostics
 
-            Audio compatibility:
-            - Adds Ogg Opus decoding through pinned libogg/libopus/libopusfile dependencies
-            - Rock Band/YARG-style multi-stem .opus packages are decoded and mixed to an in-memory stereo PCM stream at song load
-            - preview.opus is excluded from playback
-            - The mixed stream is handed back to the same raylib Music transport used by existing OGG/MP3/WAV/FLAC songs, keeping one authoritative gameplay clock
-
-            New clean-install defaults:
-            - Highway speed 1.75x
-            - Highway length 95%
-            - FPS uncapped
-            - Fullscreen enabled
-            - Native monitor resolution enabled
-            - Neon theme
-            - Camera FOV 50 degrees
-            - Highway width 7.0
-
-            Existing config.ini/ui.ini files are preserved so upgrading does not overwrite a player's current preferences.
-
-            Existing alpha.8 musical measure bars, HOPO/tap visuals, restart safety, chart verification, gameplay feedback, menus, calibration, artwork, logging and crash dumps remain intact.
+            All alpha.9 MIDI, Opus, song-library, native-resolution, gameplay, timing, calibration, artwork and compatibility features remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.9-win64.zip
+            dist/GitarGame-v0.1.0-alpha.10-win64.zip
