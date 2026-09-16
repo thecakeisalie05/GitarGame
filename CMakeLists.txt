@@ -116,9 +116,11 @@ set_target_properties(GitarGame PROPERTIES
 
 add_executable(GitarGameChartTests tests/chart_engine_tests.cpp)
 target_include_directories(GitarGameChartTests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+# CMAKE_BUILD_TYPE=Release normally defines NDEBUG, which would compile all of
+# the assert-based regression checks away. Explicitly undefine it for tests.
 if (MSVC)
-    target_compile_options(GitarGameChartTests PRIVATE /W4 /permissive-)
+    target_compile_options(GitarGameChartTests PRIVATE /W4 /permissive- /UNDEBUG)
 else()
-    target_compile_options(GitarGameChartTests PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(GitarGameChartTests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
 endif()
 add_test(NAME chart-compatibility COMMAND GitarGameChartTests)
