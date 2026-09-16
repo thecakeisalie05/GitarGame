@@ -1,6 +1,7 @@
 #include <bit>
 #include <cctype>
 #include "chart_engine.h"
+#include "highway_grid.h"
 
 #include <cassert>
 #include <cmath>
@@ -171,6 +172,42 @@ int main() {
         assert(chart);
         assert(chart->selectedSection == "HardSingle");
         assert(chartWarningCount(*chart) >= 1);
+    }
+
+    {
+        const auto path = writeFixture("grid.chart", R"([Song]
+{
+  Resolution = 192
+}
+[SyncTrack]
+{
+  0 = B 120000
+  768 = TS 3 2
+  1344 = B 240000
+}
+[ExpertSingle]
+{
+  0 = N 0 0
+  1728 = N 1 0
+}
+)");
+        std::string error;
+        auto chart = parseChart(path, error);
+        assert(chart);
+        const auto grid = buildHighwayGrid(*chart);
+        assert(!grid.empty());
+        assert(grid[0].tick == 0 && grid[0].measure);
+        bool sawMeasure768 = false;
+        bool sawBeat960 = false;
+        bool sawMeasure1344 = false;
+        for (const auto& line : grid) {
+            if (line.tick == 768 && line.measure) sawMeasure768 = true;
+            if (line.tick == 960 && !line.measure) sawBeat960 = true;
+            if (line.tick == 1344 && line.measure) sawMeasure1344 = true;
+        }
+        assert(sawMeasure768);
+        assert(sawBeat960);
+        assert(sawMeasure1344);
     }
 
     std::cout << "GitarGame chart compatibility tests passed\n";
