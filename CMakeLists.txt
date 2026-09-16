@@ -28,8 +28,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 # Native Ogg Opus compatibility for Rock Band/YARG-style song packages.
-# opusfile depends on libogg + libopus; OVERRIDE_FIND_PACKAGE lets its own
-# find_package() calls resolve to these pinned FetchContent dependencies.
 set(INSTALL_DOCS OFF CACHE BOOL "" FORCE)
 set(INSTALL_PKG_CONFIG_MODULE OFF CACHE BOOL "" FORCE)
 set(INSTALL_CMAKE_PACKAGE_MODULE OFF CACHE BOOL "" FORCE)
@@ -55,14 +53,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(opus)
 
+# Pin a modern opusfile revision whose CMake build exports OpusFile::opusfile.
+# This avoids depending on a branch head while giving us proper transitive Ogg/
+# Opus include paths and a real library target on MSVC.
 set(OP_DISABLE_HTTP ON CACHE BOOL "" FORCE)
 set(OP_DISABLE_EXAMPLES ON CACHE BOOL "" FORCE)
 set(OP_DISABLE_DOCS ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
     opusfile
     GIT_REPOSITORY https://github.com/xiph/opusfile.git
-    GIT_TAG v0.12
-    GIT_SHALLOW TRUE
+    GIT_TAG 6dfd29e7adb87f2e193575fc3fa88cbf1a0b27df
 )
 FetchContent_MakeAvailable(opusfile)
 
@@ -89,17 +89,9 @@ add_executable(GitarGame
     "${GITARGAME_SOURCE}"
 )
 
-target_include_directories(GitarGame PRIVATE
-    "${CMAKE_SOURCE_DIR}/src"
-    "${opusfile_SOURCE_DIR}/include"
-    "${ogg_SOURCE_DIR}/include"
-    "${ogg_BINARY_DIR}/include"
-    "${opus_SOURCE_DIR}/include"
-)
+target_include_directories(GitarGame PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_precompile_headers(GitarGame PRIVATE src/preinclude.h)
-# opusfile v0.12 exports the plain target name and predates modern transitive
-# CMake usage requirements, so include roots are listed explicitly above.
-target_link_libraries(GitarGame PRIVATE raylib opusfile)
+target_link_libraries(GitarGame PRIVATE raylib OpusFile::opusfile)
 
 if (WIN32)
     target_compile_definitions(GitarGame PRIVATE WIN32_LEAN_AND_MEAN NOGDI NOUSER NOMINMAX _CRT_SECURE_NO_WARNINGS)
