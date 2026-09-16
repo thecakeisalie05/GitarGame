@@ -1,4 +1,4 @@
-# Alpha.10 release validation workflow
+# Alpha.11 release validation workflow
 name: Build and Release Alpha
 
 on:
@@ -35,39 +35,40 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.10-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.11-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.10-win64
+          name: GitarGame-v0.1.0-alpha.11-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.10-win64.zip
+            dist/GitarGame-v0.1.0-alpha.11-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.10
-          name: GitarGame v0.1.0-alpha.10
+          tag_name: v0.1.0-alpha.11
+          name: GitarGame v0.1.0-alpha.11
           prerelease: true
           make_latest: false
           body: |
-            Fullscreen folder-picker focus fix on top of alpha.9.
+            MIDI sustain-compatibility fix on top of alpha.10.
 
-            Folder picker behavior:
-            - Fullscreen GitarGame temporarily minimizes before the songs-folder dialog opens
-            - The WinForms folder chooser is owned by an invisible topmost window so it cannot render behind the game
-            - GitarGame restores and explicitly reclaims focus after either selecting a folder or cancelling
-            - Windowed mode stays visible while the picker is open, with the chooser still forced above it
-            - Folder-picker open/restore/selection events are written to GitarGame.log for diagnostics
+            MIDI gameplay compatibility:
+            - Applies the Clone Hero-style default MIDI sustain cutoff of floor(resolution / 3) + 1 ticks
+            - Short DAW-authored MIDI note lengths are now normalized to ordinary gems instead of rendering every gem as a sustain
+            - Real sustains longer than the cutoff remain intact, including per-lane chord sustain lengths
+            - Supports song.ini sustain_cutoff_threshold overrides (and the historical misspelled sustain_cuttoff_threshold alias defensively)
+            - Logs the active MIDI sustain cutoff as a chart compatibility info entry
+            - Adds a dedicated release-gated regression test proving short 60-tick gems are cut at 480 PPQN while 240-tick sustains survive, plus override behavior
 
-            All alpha.9 MIDI, Opus, song-library, native-resolution, gameplay, timing, calibration, artwork and compatibility features remain intact.
+            All alpha.10 fullscreen folder-picker behavior and alpha.9 MIDI/Opus song support remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.10-win64.zip
+            dist/GitarGame-v0.1.0-alpha.11-win64.zip
