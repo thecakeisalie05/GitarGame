@@ -34,63 +34,52 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.7-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.8-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.7-win64
+          name: GitarGame-v0.1.0-alpha.8-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.7-win64.zip
+            dist/GitarGame-v0.1.0-alpha.8-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.7
-          name: GitarGame v0.1.0-alpha.7
+          tag_name: v0.1.0-alpha.8
+          name: GitarGame v0.1.0-alpha.8
           prerelease: true
           make_latest: false
           body: |
-            Chart compatibility / verification / gameplay-feedback overhaul.
+            Gameplay-visual polish pass plus restart-state fix.
 
-            Chart layer:
-            - Replaces the original ad-hoc .chart parser with a dedicated compatibility engine
-            - Handles UTF-8 BOMs before the [Song] section so Resolution and Offset are not silently lost
-            - Uses the documented BPM x1000 format and full piecewise tempo map
-            - Uses the exact Clone Hero-style .chart natural-HOPO threshold: floor((65/192) * resolution)
-            - Parses forced notes, taps, open notes, per-lane extended sustains, Star Power phrases and time signatures
-            - Modifier-only ticks no longer risk becoming playable note events
-            - Supports fallback five-fret guitar sections when ExpertSingle is absent
-            - Collapses duplicate BPM events at a tick deterministically and inserts a 120 BPM fallback only when required
-            - Adds chart/audio duration sanity checks and conservative recovery for charts genuinely missing Resolution
-            - Logs parser/verification warnings, selected track, resolution, BPM-event count, note count, SP phrase count and chart/audio duration
-            - Adds regression tests for BPM changes, BOM + non-192 resolution, modifiers, HOPO boundaries, open notes, Star Power and track fallback
+            Highway grid:
+            - Replaces static evenly spaced depth guides with chart-derived musical beat and measure lines
+            - Measure bars are generated from chart Resolution and time-signature events
+            - Tempo changes naturally change their visual spacing because grid ticks are converted through the same tempo map as notes
+            - Beat/measure lines move down the 3D highway using the exact same time-to-Z projection as gems
+            - Strong measure bars and subtler beat subdivisions improve phrase/readability without adding meaningful GPU load
+            - Adds regression coverage for measure generation across a 4/4 to 3/4 time-signature change and BPM change
 
-            Timing:
-            - Reverts the alpha.6 pure wall-clock experiment
-            - Decoder/audio progress is the long-term playback authority again
-            - Adds only up to 20 ms of interpolation between decoder updates for visual smoothness, preventing accumulated chart-speed drift
-            - Retains chart Offset, song.ini delay compatibility and user calibration as fixed offsets
+            Note readability:
+            - HOPOs now use a smaller raised colored face with a bright pale outer rim, giving them a distinct silhouette from strum notes
+            - Tap notes use an even brighter white cap with colored core so taps remain distinct from both HOPOs and strums
+            - Normal strum notes remain broad solid lane-colored pucks
+            - Missed notes retain the red ghost treatment regardless of note type
 
-            Gameplay / visuals:
-            - Hit notes and misses now have distinct visual states
-            - Missed gems remain briefly as red ghosts instead of disappearing instantly
-            - Adds PERFECT / GREAT / GOOD / MISS / OVERSTRUM feedback with hit timing in milliseconds
-            - Adds a graphical accuracy bar with hit/miss counts
-            - Adds a graphical ROCK meter that rises/falls with performance
-            - Parses and displays Star Power meter progress; successful phrases award meter and the configured Star Power control can activate it
-            - Active Star Power visually tints the highway and doubles base note scoring
-            - Adds chart verification status to the gameplay HUD
-            - Displays selected chart section, resolution and tempo-event count while playing
-            - Adds rendering for five-fret open notes and per-lane sustain lengths
+            Restart fix:
+            - Adds a decoder rewind guard around song restart
+            - Prevents a stale pre-seek GetMusicTimePlayed value from instantly marking the freshly reset chart as missed
+            - resetChartState continues to clear all note hit/miss visuals, Star Power meter/activation, rock meter, phrase state, score/combo, and judgment text
+            - The highway is held at the initial chart position only until the audio decoder confirms the rewind (with a short safety timeout)
 
-            Existing alpha.5 QoL menus, guitar navigation, calibration, artwork, customization, Unicode filesystem fixes, logging and crash dumps remain intact.
+            Existing alpha.7 chart verification, timing compatibility, HUD feedback, menus, calibration, artwork, customization, logging and crash dumps remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.7-win64.zip
+            dist/GitarGame-v0.1.0-alpha.8-win64.zip
