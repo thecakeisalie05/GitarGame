@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.24)
 project(GitarGame VERSION 0.1.6 LANGUAGES C CXX)
 
+# This project publishes portable build artifacts directly and does not run
+# `cmake --install`. Suppressing install-rule generation also prevents embedded
+# third-party packages from trying to export one another as installed SDKs.
+set(CMAKE_SKIP_INSTALL_RULES ON)
+
 # GitHub's current Windows image ships CMake 4.x. libogg 1.3.5 predates the
 # CMake 4 policy floor, so explicitly permit its older policy baseline while
 # keeping GitarGame itself on modern CMake.
