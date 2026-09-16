@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $alpha8 = Join-Path $PSScriptRoot 'prepare_alpha8.ps1'
 & $alpha8 -InputPath $InputPath -OutputPath $OutputPath
-if ($LASTEXITCODE -ne 0) { throw 'alpha.8 source preparation failed before alpha.9 song-package patching' }
+if (-not (Test-Path $OutputPath)) { throw 'alpha.8 source preparation did not produce an output file before alpha.9 patching' }
 
 # ---------------------------------------------------------------------------
 # Patch the generated legacy core: song discovery, MIDI chart loading,
