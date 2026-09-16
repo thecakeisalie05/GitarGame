@@ -34,52 +34,59 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.8-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.9-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.8-win64
+          name: GitarGame-v0.1.0-alpha.9-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.8-win64.zip
+            dist/GitarGame-v0.1.0-alpha.9-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.8
-          name: GitarGame v0.1.0-alpha.8
+          tag_name: v0.1.0-alpha.9
+          name: GitarGame v0.1.0-alpha.9
           prerelease: true
           make_latest: false
           body: |
-            Gameplay-visual polish pass plus restart-state fix.
+            Song-library compatibility and clean-install defaults overhaul.
 
-            Highway grid:
-            - Replaces static evenly spaced depth guides with chart-derived musical beat and measure lines
-            - Measure bars are generated from chart Resolution and time-signature events
-            - Tempo changes naturally change their visual spacing because grid ticks are converted through the same tempo map as notes
-            - Beat/measure lines move down the 3D highway using the exact same time-to-Z projection as gems
-            - Strong measure bars and subtler beat subdivisions improve phrase/readability without adding meaningful GPU load
-            - Adds regression coverage for measure generation across a 4/4 to 3/4 time-signature change and BPM change
+            Song discovery / chart compatibility:
+            - Song scanning recognizes notes.chart, notes.mid and notes.midi recursively
+            - Folders containing both formats prefer notes.chart deterministically
+            - Adds native Standard MIDI File type 0/1 parsing with PPQN timing
+            - Normalizes PART GUITAR / T1 GEMS Expert five-fret MIDI into the same ChartData used by .chart
+            - Reads MIDI tempo changes and time signatures into the existing verified timing map
+            - Supports Expert open notes (95), five fret gems (96-100), force-HOPO (101), force-strum (102), tap markers (104) and Star Power phrases (116)
+            - Adds an in-CI synthetic MIDI regression fixture covering tempo changes, forced HOPO/strum, taps and Star Power
 
-            Note readability:
-            - HOPOs now use a smaller raised colored face with a bright pale outer rim, giving them a distinct silhouette from strum notes
-            - Tap notes use an even brighter white cap with colored core so taps remain distinct from both HOPOs and strums
-            - Normal strum notes remain broad solid lane-colored pucks
-            - Missed notes retain the red ghost treatment regardless of note type
+            Audio compatibility:
+            - Adds Ogg Opus decoding through pinned libogg/libopus/libopusfile dependencies
+            - Rock Band/YARG-style multi-stem .opus packages are decoded and mixed to an in-memory stereo PCM stream at song load
+            - preview.opus is excluded from playback
+            - The mixed stream is handed back to the same raylib Music transport used by existing OGG/MP3/WAV/FLAC songs, keeping one authoritative gameplay clock
 
-            Restart fix:
-            - Adds a decoder rewind guard around song restart
-            - Prevents a stale pre-seek GetMusicTimePlayed value from instantly marking the freshly reset chart as missed
-            - resetChartState continues to clear all note hit/miss visuals, Star Power meter/activation, rock meter, phrase state, score/combo, and judgment text
-            - The highway is held at the initial chart position only until the audio decoder confirms the rewind (with a short safety timeout)
+            New clean-install defaults:
+            - Highway speed 1.75x
+            - Highway length 95%
+            - FPS uncapped
+            - Fullscreen enabled
+            - Native monitor resolution enabled
+            - Neon theme
+            - Camera FOV 50 degrees
+            - Highway width 7.0
 
-            Existing alpha.7 chart verification, timing compatibility, HUD feedback, menus, calibration, artwork, customization, logging and crash dumps remain intact.
+            Existing config.ini/ui.ini files are preserved so upgrading does not overwrite a player's current preferences.
+
+            Existing alpha.8 musical measure bars, HOPO/tap visuals, restart safety, chart verification, gameplay feedback, menus, calibration, artwork, logging and crash dumps remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.8-win64.zip
+            dist/GitarGame-v0.1.0-alpha.9-win64.zip
