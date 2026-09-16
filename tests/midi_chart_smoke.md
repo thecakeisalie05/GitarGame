@@ -1,0 +1,1 @@
+This placeholder documents that alpha.9 adds native MIDI parsing. The executable regression test lives in `tests/chart_engine_tests.cpp`; this file exists only to keep the compatibility work visible in repository history while the test fixture is generated in code.
