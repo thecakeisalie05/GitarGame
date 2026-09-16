@@ -92,10 +92,13 @@ add_executable(GitarGame
 target_include_directories(GitarGame PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
     "${opusfile_SOURCE_DIR}/include"
+    "${ogg_SOURCE_DIR}/include"
+    "${ogg_BINARY_DIR}/include"
+    "${opus_SOURCE_DIR}/include"
 )
 target_precompile_headers(GitarGame PRIVATE src/preinclude.h)
-# opusfile v0.12 exports the plain target name; newer revisions also provide a
-# namespaced alias. Link the pinned release target directly for deterministic CI.
+# opusfile v0.12 exports the plain target name and predates modern transitive
+# CMake usage requirements, so include roots are listed explicitly above.
 target_link_libraries(GitarGame PRIVATE raylib opusfile)
 
 if (WIN32)
