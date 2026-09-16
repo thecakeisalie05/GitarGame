@@ -45,6 +45,39 @@ inline bool insideAny(const std::vector<Span>& spans, int64_t tick) {
     return false;
 }
 
+// Rock Band/Guitar Hero MIDI gems normally have a small non-zero note length
+// even when they are not intended to be sustains. Clone Hero-compatible
+// consumers collapse these "baby sustains" to zero. The default cutoff is
+// floor(resolution / 3) + 1 ticks, and song.ini can override it.
+inline int readSustainCutoffTicks(const std::filesystem::path& midiFile, int resolution) {
+    const int defaultCutoff = std::max(0, resolution / 3 + 1);
+    std::ifstream in(midiFile.parent_path() / "song.ini");
+    if (!in) return defaultCutoff;
+
+    std::string section;
+    std::string line;
+    while (std::getline(in, line)) {
+        line = chartcompat::trimCopy(line);
+        if (line.empty() || line[0] == ';' || line[0] == '#') continue;
+        if (line.front() == '[' && line.back() == ']') {
+            section = chartcompat::lowerCopy(chartcompat::trimCopy(line.substr(1, line.size() - 2)));
+            continue;
+        }
+        if (section != "song") continue;
+        const auto equals = line.find('=');
+        if (equals == std::string::npos) continue;
+        const std::string key = chartcompat::lowerCopy(chartcompat::trimCopy(line.substr(0, equals)));
+        if (key != "sustain_cutoff_threshold" && key != "sustain_cuttoff_threshold") continue;
+        std::string value = chartcompat::trimCopy(line.substr(equals + 1));
+        if (value.size() >= 2 && ((value.front() == '"' && value.back() == '"') || (value.front() == '\'' && value.back() == '\''))) {
+            value = value.substr(1, value.size() - 2);
+        }
+        try { return std::max(0, std::stoi(value)); }
+        catch (...) { return defaultCutoff; }
+    }
+    return defaultCutoff;
+}
+
 inline std::optional<ChartData> parse(const std::filesystem::path& file, std::string& error) {
     std::ifstream in(file, std::ios::binary);
     if (!in) { error = "Could not open notes.mid"; return std::nullopt; }
@@ -67,6 +100,7 @@ inline std::optional<ChartData> parse(const std::filesystem::path& file, std::st
     chart.resolution = static_cast<int>(division);
     chart.resolutionExplicit = true;
     chart.selectedSection = "ExpertSingle (MIDI)";
+    const int sustainCutoffTicks = readSustainCutoffTicks(file, chart.resolution);
     std::vector<TrackData> tracks;
 
     for (uint16_t trackIndex = 0; trackIndex < trackCount; ++trackIndex) {
@@ -184,7 +218,8 @@ inline std::optional<ChartData> parse(const std::filesystem::path& file, std::st
     for (const auto& raw : guitar->notes) {
         if (raw.note < 95 || raw.note > 100) continue;
         auto& temp = grouped[raw.start];
-        const int64_t sustain = std::max<int64_t>(0, raw.end - raw.start);
+        const int64_t rawSustain = std::max<int64_t>(0, raw.end - raw.start);
+        const int64_t sustain = rawSustain > sustainCutoffTicks ? rawSustain : 0;
         if (raw.note == 95) { temp.open = true; temp.openSustain = std::max(temp.openSustain, sustain); }
         else {
             const int lane = raw.note - 96;
@@ -227,6 +262,7 @@ inline std::optional<ChartData> parse(const std::filesystem::path& file, std::st
     }
 
     chartcompat::issue(chart, ChartIssueSeverity::Info, "Loaded Rock Band/Guitar Hero MIDI PART GUITAR Expert chart.");
+    chartcompat::issue(chart, ChartIssueSeverity::Info, "MIDI sustain cutoff: " + std::to_string(sustainCutoffTicks) + " ticks.");
     error.clear();
     return chart;
 }
