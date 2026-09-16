@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.24)
 project(GitarGame VERSION 0.1.6 LANGUAGES C CXX)
 
+# GitHub's current Windows image ships CMake 4.x. libogg 1.3.5 predates the
+# CMake 4 policy floor, so explicitly permit its older policy baseline while
+# keeping GitarGame itself on modern CMake.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
