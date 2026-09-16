@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(GitarGame VERSION 0.1.7 LANGUAGES C CXX)
+project(GitarGame VERSION 0.1.8 LANGUAGES C CXX)
 
 # This project publishes portable build artifacts directly and does not run
 # `cmake --install`. Suppressing install-rule generation also prevents embedded
@@ -80,13 +80,13 @@ if (WIN32)
     set(GITARGAME_SOURCE "${GITARGAME_GENERATED_DIR}/main_v3.cpp")
     execute_process(
         COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass
-            -File "${CMAKE_SOURCE_DIR}/tools/prepare_alpha10.ps1"
+            -File "${CMAKE_SOURCE_DIR}/tools/prepare_alpha11.ps1"
             -InputPath "${CMAKE_SOURCE_DIR}/src/main_v3.cpp"
             -OutputPath "${GITARGAME_SOURCE}"
         RESULT_VARIABLE GITARGAME_PREPARE_RESULT
     )
     if (NOT GITARGAME_PREPARE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to prepare the Windows alpha.10 source")
+        message(FATAL_ERROR "Failed to prepare the Windows alpha.11 source")
     endif()
 endif()
 
@@ -116,11 +116,18 @@ set_target_properties(GitarGame PROPERTIES
 
 add_executable(GitarGameChartTests tests/chart_engine_tests.cpp)
 target_include_directories(GitarGameChartTests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+
+add_executable(GitarGameMidiSustainTests tests/midi_sustain_tests.cpp)
+target_include_directories(GitarGameMidiSustainTests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+
 # CMAKE_BUILD_TYPE=Release normally defines NDEBUG, which would compile all of
 # the assert-based regression checks away. Explicitly undefine it for tests.
 if (MSVC)
     target_compile_options(GitarGameChartTests PRIVATE /W4 /permissive- /UNDEBUG)
+    target_compile_options(GitarGameMidiSustainTests PRIVATE /W4 /permissive- /UNDEBUG)
 else()
     target_compile_options(GitarGameChartTests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_options(GitarGameMidiSustainTests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
 endif()
 add_test(NAME chart-compatibility COMMAND GitarGameChartTests)
+add_test(NAME midi-sustain-cutoff COMMAND GitarGameMidiSustainTests)
