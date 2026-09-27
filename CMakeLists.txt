@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(GitarGame VERSION 0.1.11 LANGUAGES C CXX)
+project(GitarGame VERSION 0.1.12 LANGUAGES C CXX)
 
 # This project publishes portable build artifacts directly and does not run
 # `cmake --install`. Suppressing install-rule generation also prevents embedded
@@ -80,13 +80,26 @@ if (WIN32)
     set(GITARGAME_SOURCE "${GITARGAME_GENERATED_DIR}/main_v3.cpp")
     execute_process(
         COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass
-            -File "${CMAKE_SOURCE_DIR}/tools/prepare_alpha14.ps1"
+            -File "${CMAKE_SOURCE_DIR}/tools/prepare_alpha15.ps1"
             -InputPath "${CMAKE_SOURCE_DIR}/src/main_v3.cpp"
             -OutputPath "${GITARGAME_SOURCE}"
         RESULT_VARIABLE GITARGAME_PREPARE_RESULT
     )
     if (NOT GITARGAME_PREPARE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to prepare the Windows alpha.14 source")
+        message(FATAL_ERROR "Failed to prepare the Windows alpha.15 source")
+    endif()
+endif()
+
+if (WIN32)
+    # Keep shell/COM headers isolated from raylib. The main GitarGame target
+    # intentionally uses a reduced Win32 header surface, while this tiny helper
+    # can include the Common Item Dialog interfaces without name collisions.
+    add_library(GitarGameWinShell STATIC src/native_folder_picker.cpp)
+    target_include_directories(GitarGameWinShell PUBLIC "${CMAKE_SOURCE_DIR}/src")
+    target_compile_definitions(GitarGameWinShell PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_link_libraries(GitarGameWinShell PRIVATE ole32 shell32 uuid)
+    if (MSVC)
+        target_compile_options(GitarGameWinShell PRIVATE /W4 /permissive-)
     endif()
 endif()
 
@@ -100,7 +113,7 @@ target_link_libraries(GitarGame PRIVATE raylib OpusFile::opusfile)
 
 if (WIN32)
     target_compile_definitions(GitarGame PRIVATE WIN32_LEAN_AND_MEAN NOGDI NOUSER NOMINMAX _CRT_SECURE_NO_WARNINGS)
-    target_link_libraries(GitarGame PRIVATE Xinput9_1_0 winmm dbghelp)
+    target_link_libraries(GitarGame PRIVATE Xinput9_1_0 winmm dbghelp GitarGameWinShell)
 endif()
 
 if (MSVC)
