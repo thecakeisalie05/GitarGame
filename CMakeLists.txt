@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(GitarGame VERSION 0.1.12 LANGUAGES C CXX)
+project(GitarGame VERSION 0.1.13 LANGUAGES C CXX)
 
 # This project publishes portable build artifacts directly and does not run
 # `cmake --install`. Suppressing install-rule generation also prevents embedded
@@ -80,13 +80,13 @@ if (WIN32)
     set(GITARGAME_SOURCE "${GITARGAME_GENERATED_DIR}/main_v3.cpp")
     execute_process(
         COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass
-            -File "${CMAKE_SOURCE_DIR}/tools/prepare_alpha15.ps1"
+            -File "${CMAKE_SOURCE_DIR}/tools/prepare_alpha16.ps1"
             -InputPath "${CMAKE_SOURCE_DIR}/src/main_v3.cpp"
             -OutputPath "${GITARGAME_SOURCE}"
         RESULT_VARIABLE GITARGAME_PREPARE_RESULT
     )
     if (NOT GITARGAME_PREPARE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to prepare the Windows alpha.15 source")
+        message(FATAL_ERROR "Failed to prepare the Windows alpha.16 source")
     endif()
 endif()
 
@@ -139,6 +139,9 @@ target_include_directories(GitarGameCalibrationTests PRIVATE "${CMAKE_SOURCE_DIR
 add_executable(GitarGameFeedbackTests tests/gameplay_feedback_tests.cpp)
 target_include_directories(GitarGameFeedbackTests PRIVATE "${CMAKE_SOURCE_DIR}/src")
 
+add_executable(GitarGameGuitarEngineTests tests/guitar_engine_tests.cpp)
+target_include_directories(GitarGameGuitarEngineTests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+
 # CMAKE_BUILD_TYPE=Release normally defines NDEBUG, which would compile all of
 # the assert-based regression checks away. Explicitly undefine it for tests.
 if (MSVC)
@@ -146,13 +149,16 @@ if (MSVC)
     target_compile_options(GitarGameMidiSustainTests PRIVATE /W4 /permissive- /UNDEBUG)
     target_compile_options(GitarGameCalibrationTests PRIVATE /W4 /permissive- /UNDEBUG)
     target_compile_options(GitarGameFeedbackTests PRIVATE /W4 /permissive- /UNDEBUG)
+    target_compile_options(GitarGameGuitarEngineTests PRIVATE /W4 /permissive- /UNDEBUG)
 else()
     target_compile_options(GitarGameChartTests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_options(GitarGameMidiSustainTests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_options(GitarGameCalibrationTests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_options(GitarGameFeedbackTests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_options(GitarGameGuitarEngineTests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
 endif()
 add_test(NAME chart-compatibility COMMAND GitarGameChartTests)
 add_test(NAME midi-sustain-cutoff COMMAND GitarGameMidiSustainTests)
 add_test(NAME calibration-estimator COMMAND GitarGameCalibrationTests)
 add_test(NAME gameplay-feedback COMMAND GitarGameFeedbackTests)
+add_test(NAME guitar-engine COMMAND GitarGameGuitarEngineTests)
