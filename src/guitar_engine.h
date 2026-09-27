@@ -29,6 +29,20 @@ inline bool releasedHigherFret(uint8_t releasedMask, uint8_t target) {
     return (releasedMask & higherMask) != 0;
 }
 
+inline bool frontendHeldStillValid(bool hopo, bool tap, bool open,
+                                      int comboBeforeHit, uint8_t held,
+                                      uint8_t targetMask) {
+    if (open) {
+        if (held != 0) return false;
+        if (tap) return true;
+        return hopo && comboBeforeHit > 0;
+    }
+
+    if (!heldMatches(held, targetMask)) return false;
+    if (tap) return true;
+    return hopo && comboBeforeHit > 0;
+}
+
 inline bool canFretTransitionHit(bool hopo, bool tap, bool open,
                                  int comboBeforeHit, uint8_t resultingHeld,
                                  uint8_t targetMask, uint8_t pressedMask,
