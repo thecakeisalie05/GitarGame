@@ -23,21 +23,21 @@ int main() {
     assert(!heldMatches(0b00111, 0b00110));
 
     // HOPOs require an active combo.
-    assert(!canFretTransitionHit(true, false, false, 0, 0b00010, 0b00010, 0));
-    assert(canFretTransitionHit(true, false, false, 7, 0b00011, 0b00010, 0));
+    assert(!canFretTransitionHit(true, false, false, 0, 0b00010, 0b00010, 0b00010, 0));
+    assert(canFretTransitionHit(true, false, false, 7, 0b00011, 0b00010, 0b00010, 0));
 
     // Pull off from yellow to an anchored red (green remains held).
-    assert(canFretTransitionHit(true, false, false, 12, 0b00011, 0, 0b00100));
+    assert(canFretTransitionHit(true, false, false, 12, 0b00011, 0b00010, 0, 0b00100));
     // Releasing a lower fret while red remains held is not a pull-off to red.
-    assert(!canFretTransitionHit(true, false, false, 12, 0b00010, 0, 0b00001));
+    assert(!canFretTransitionHit(true, false, false, 12, 0b00010, 0b00010, 0, 0b00001));
 
     // Taps work without combo, but require a fresh press.
-    assert(canFretTransitionHit(false, true, false, 0, 0b01000, 0b01000, 0));
-    assert(!canFretTransitionHit(false, true, false, 0, 0b01000, 0, 0b00100));
+    assert(canFretTransitionHit(false, true, false, 0, 0b01000, 0b01000, 0b01000, 0));
+    assert(!canFretTransitionHit(false, true, false, 0, 0b01000, 0b01000, 0, 0b00100));
 
     // Open HOPO/tap notes are played by releasing all frets.
-    assert(canFretTransitionHit(true, false, true, 4, 0, 0, 0b00010));
-    assert(!canFretTransitionHit(true, false, true, 0, 0, 0, 0b00010));
+    assert(canFretTransitionHit(true, false, true, 4, 0, 0, 0, 0b00010));
+    assert(!canFretTransitionHit(true, false, true, 0, 0, 0, 0, 0b00010));
     assert(canFretTransitionHit(false, true, true, 0, 0, 0, 0b00010));
 
     // Poll timestamp mapping removes render-frame delay.
