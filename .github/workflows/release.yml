@@ -1,4 +1,4 @@
-# Alpha.14 release validation workflow
+# Alpha.15 release validation workflow
 name: Build and Release Alpha
 
 on:
@@ -35,51 +35,47 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.14-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.15-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.14-win64
+          name: GitarGame-v0.1.0-alpha.15-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.14-win64.zip
+            dist/GitarGame-v0.1.0-alpha.15-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.14
-          name: GitarGame v0.1.0-alpha.14
+          tag_name: v0.1.0-alpha.15
+          name: GitarGame v0.1.0-alpha.15
           prerelease: true
           make_latest: false
           body: |
-            Gameplay readability refinement on top of alpha.13.
+            Windows hardening release on top of alpha.14.
 
-            Receptors / strike bar:
-            - Raises fret receptors physically above the strike bar and gives them a dark pedestal
-            - Inactive receptors stay visibly colored instead of becoming nearly transparent
-            - Strike-bar geometry is lowered so shallow camera angles cannot wash over the receptors
+            Native folder picker:
+            - Removes the runtime PowerShell/WinForms folder-picker bridge from GitarGame.exe
+            - Uses the Windows Common Item Dialog (IFileDialog/FOS_PICKFOLDERS) directly
+            - Keeps COM/shell headers isolated in a tiny helper library so they cannot collide with raylib
+            - Uses GitarGame's native HWND as the dialog owner
+            - Temporarily leaves fullscreen while the native dialog is open, then restores fullscreen and focus
+            - Preserves UTF-8 song-directory paths through explicit UTF-16 to UTF-8 conversion
+            - Source generation fails if the old powershell.exe/_popen/WinForms bridge is still present
 
-            Hit feedback:
-            - Replaces the generic 2D ping rings with a 3D note-shaped bloom
-            - Normal notes, HOPOs, taps and open notes each preserve their own silhouette
-            - Chords bloom every authored gem at the receptor
-            - The hit ghost brightens, expands slightly, lifts away from the highway and fades quickly
-            - Realtime hit timestamps keep feedback independent of video calibration
+            Release intent:
+            - Rebuilds the executable after alpha.14 was reported as "Virus detected" by Edge/Defender
+            - Does not disable, bypass or whitelist antivirus protection
+            - Keeps alpha.14 gameplay visuals and all previous compatibility/calibration behavior
 
-            Miss feedback:
-            - Missed gems retain their note type while transitioning toward red
-            - Adds a restrained throb/shrink and partial fade as the missed gem passes the strike line
-            - Open-note misses use the same red transition on their bar-shaped gem
-            - Miss feedback remains separate from hit feedback and does not add a large overlay
-
-            Existing alpha.13 song previews/song completion, alpha.12 calibration,
-            MIDI/Opus compatibility and chart verification remain intact.
+            Existing alpha.14 gameplay readability, alpha.13 previews/song completion,
+            alpha.12 calibration, MIDI/Opus compatibility and chart verification remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.14-win64.zip
+            dist/GitarGame-v0.1.0-alpha.15-win64.zip
