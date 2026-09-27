@@ -119,7 +119,8 @@ $legacy = $updatedLegacy
 $text = [System.IO.File]::ReadAllText($OutputPath)
 $text = $text.Replace('v0.1.0-alpha.16', 'v0.1.0-alpha.17')
 $text = $text.Replace('#include "calibration_engine.h"',
-                      '#include "calibration_engine.h"' + [Environment]::NewLine + '#include "calibration_profile.h"')
+                      '#include "calibration_engine.h"' + [Environment]::NewLine + '#include "calibration_profile.h"' +
+                      [Environment]::NewLine + '#include <iterator>')
 
 $mainMarker = 'int main(int argc, char** argv) {'
 $profileHelpers = @'
