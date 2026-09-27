@@ -38,7 +38,7 @@ int main() {
     // Open HOPO/tap notes are played by releasing all frets.
     assert(canFretTransitionHit(true, false, true, 4, 0, 0, 0, 0b00010));
     assert(!canFretTransitionHit(true, false, true, 0, 0, 0, 0, 0b00010));
-    assert(canFretTransitionHit(false, true, true, 0, 0, 0, 0b00010));
+    assert(canFretTransitionHit(false, true, true, 0, 0, 0, 0, 0b00010));
 
     // Poll timestamp mapping removes render-frame delay.
     assert(near(eventSongTime(10.000, 0.006), 9.994));
