@@ -45,6 +45,12 @@ $markTextNew = $markText.Replace(
 if ($markTextNew -eq $markText) { throw 'Could not add hit feedback state to markHit' }
 $legacy = $legacy.Replace($markText, $markTextNew)
 
+$stemsAssigned = '    session.stems = std::move(stems);'
+$stemsAssignedNew = '    session.stems = std::move(stems);' + [Environment]::NewLine +
+                    '    for (auto& stem : session.stems) stem.music.looping = false;'
+if (-not $legacy.Contains($stemsAssigned)) { throw 'Could not locate gameplay stem assignment for non-looping transport' }
+$legacy = $legacy.Replace($stemsAssigned, $stemsAssignedNew)
+
 [System.IO.File]::WriteAllText($legacyPath, $legacy, [System.Text.UTF8Encoding]::new($false))
 
 # ---------------------------------------------------------------------------
@@ -181,6 +187,7 @@ struct SongPreviewV13 {
         dedicated = usedDedicated;
         activeSong = requestedSong;
         for (auto& stem : stems) {
+            stem.music.looping = false;
             SeekMusicStream(stem.music, static_cast<float>(startSeconds));
             SetMusicVolume(stem.music, 0.58f);
             PlayMusicStream(stem.music);
@@ -389,7 +396,8 @@ $playingStartNew = @'
                     if (!session.stems.empty()) {
                         const double rawPlayed = static_cast<double>(GetMusicTimePlayed(session.stems.front().music));
                         const double rawLength = static_cast<double>(GetMusicTimeLength(session.stems.front().music));
-                        if (ggfeedback::songFinished(rawPlayed, rawLength)) {
+                        if (ggfeedback::songFinished(rawPlayed, rawLength) ||
+                            (!IsMusicStreamPlaying(session.stems.front().music) && rawPlayed > 0.25)) {
                             stopSongToBrowser();
                             status = "Song complete.";
                             break;
