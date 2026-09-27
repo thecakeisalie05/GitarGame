@@ -390,7 +390,7 @@ $browserLoadNew = 'if ((nav.accept || nav.start) && !songs.empty()) { songPrevie
 if (-not $text.Contains($browserLoadOld)) { throw 'Could not locate browser Play action for preview stop' }
 $text = $text.Replace($browserLoadOld, $browserLoadNew)
 
-$playingStartOld = '                    for (auto& stem : session.stems) UpdateMusicStream(stem.music); const double now = correctedSongTimeV5(session, cfg, activeChartOffset), window = cfg.hitWindowMs / 1000.0; advanceMisses(session, now, window); bool pauseRequested = IsKeyPressed(KEY_ESCAPE);'
+$playingPattern = '(?ms)                    for \(auto& stem : session\.stems\) UpdateMusicStream\(stem\.music\); const double now = correctedSongTimeV5\(session, cfg, activeChartOffset\), window = cfg\.hitWindowMs / 1000\.0; advanceMisses\(session, now, window\); updateGameplayStateV7\(session, now, window\); bool pauseRequested = IsKeyPressed\(KEY_ESCAPE\);'
 $playingStartNew = @'
                     for (auto& stem : session.stems) UpdateMusicStream(stem.music);
                     if (!session.stems.empty()) {
@@ -405,10 +405,12 @@ $playingStartNew = @'
                     }
                     const double now = correctedSongTimeV5(session, cfg, activeChartOffset), window = cfg.hitWindowMs / 1000.0;
                     advanceMisses(session, now, window);
+                    updateGameplayStateV7(session, now, window);
                     bool pauseRequested = IsKeyPressed(KEY_ESCAPE);
 '@
-if (-not $text.Contains($playingStartOld)) { throw 'Could not locate Playing update start for completion return' }
-$text = $text.Replace($playingStartOld, $playingStartNew.TrimEnd())
+$updated = [regex]::Replace($text, $playingPattern, $playingStartNew.TrimEnd(), 1)
+if ($updated -eq $text) { throw 'Could not locate Playing update start for completion return' }
+$text = $updated
 
 # Display preview state in the browser without changing its layout contract.
 $browserFooter = '    DrawText("Strum: browse   Green: play   Red: main menu   F5: rescan", 58, GetScreenHeight() - 34, 15, GRAY);'
