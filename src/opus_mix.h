@@ -50,6 +50,83 @@ inline void put32(std::vector<unsigned char>& out, size_t at, uint32_t value) {
     out[at + 3] = static_cast<unsigned char>((value >> 24) & 0xffU);
 }
 
+inline std::optional<OpusMixResult> decodeFile(const std::filesystem::path& path, std::string& error) {
+    const auto bytes = readBytes(path);
+    if (bytes.empty()) { error = "Could not read Opus preview"; return std::nullopt; }
+
+    int openError = 0;
+    OggOpusFile* file = op_open_memory(bytes.data(), static_cast<opus_int32>(bytes.size()), &openError);
+    if (!file) { error = "Could not open Opus preview"; return std::nullopt; }
+
+    constexpr int sampleRate = 48000;
+    constexpr int channels = 2;
+    const opus_int64 totalFrames = op_pcm_total(file, -1);
+    if (totalFrames <= 0 || totalFrames > static_cast<opus_int64>(sampleRate) * 60 * 15) {
+        op_free(file);
+        error = "Invalid or oversized Opus preview";
+        return std::nullopt;
+    }
+
+    const size_t frameCount = static_cast<size_t>(totalFrames);
+    std::vector<float> pcm(frameCount * channels, 0.0f);
+    constexpr int chunkFrames = 4096;
+    std::vector<float> chunk(static_cast<size_t>(chunkFrames) * channels);
+    size_t writeFrame = 0;
+
+    for (;;) {
+        const int got = op_read_float_stereo(file, chunk.data(), static_cast<int>(chunk.size()));
+        if (got == 0) break;
+        if (got < 0) {
+            if (got == OP_HOLE) continue;
+            break;
+        }
+        const size_t frames = std::min<size_t>(static_cast<size_t>(got), frameCount - std::min(writeFrame, frameCount));
+        for (size_t i = 0; i < frames; ++i) {
+            pcm[(writeFrame + i) * 2] = chunk[i * 2];
+            pcm[(writeFrame + i) * 2 + 1] = chunk[i * 2 + 1];
+        }
+        writeFrame += frames;
+        if (writeFrame >= frameCount) break;
+    }
+    op_free(file);
+
+    float peak = 0.0f;
+    for (float sample : pcm) peak = std::max(peak, std::abs(sample));
+    const float scale = peak > 0.98f ? 0.98f / peak : 1.0f;
+
+    const uint64_t pcmBytes64 = static_cast<uint64_t>(frameCount) * channels * sizeof(int16_t);
+    if (pcmBytes64 > 0xffffffffULL - 44ULL) { error = "Decoded preview exceeds WAV size limit"; return std::nullopt; }
+    const uint32_t pcmBytes = static_cast<uint32_t>(pcmBytes64);
+    std::vector<unsigned char> wav(static_cast<size_t>(44) + pcmBytes, 0);
+    std::copy_n(reinterpret_cast<const unsigned char*>("RIFF"), 4, wav.begin());
+    put32(wav, 4, 36U + pcmBytes);
+    std::copy_n(reinterpret_cast<const unsigned char*>("WAVEfmt "), 8, wav.begin() + 8);
+    put32(wav, 16, 16);
+    put16(wav, 20, 1);
+    put16(wav, 22, channels);
+    put32(wav, 24, sampleRate);
+    put32(wav, 28, sampleRate * channels * static_cast<int>(sizeof(int16_t)));
+    put16(wav, 32, channels * static_cast<int>(sizeof(int16_t)));
+    put16(wav, 34, 16);
+    std::copy_n(reinterpret_cast<const unsigned char*>("data"), 4, wav.begin() + 36);
+    put32(wav, 40, pcmBytes);
+
+    size_t out = 44;
+    for (float sample : pcm) {
+        const float value = std::clamp(sample * scale, -1.0f, 1.0f);
+        const int16_t v = static_cast<int16_t>(std::lrint(value * 32767.0f));
+        wav[out++] = static_cast<unsigned char>(static_cast<uint16_t>(v) & 0xffU);
+        wav[out++] = static_cast<unsigned char>((static_cast<uint16_t>(v) >> 8) & 0xffU);
+    }
+
+    OpusMixResult result;
+    result.wavBytes = std::move(wav);
+    result.stemCount = 1;
+    result.durationSeconds = static_cast<double>(frameCount) / sampleRate;
+    error.clear();
+    return result;
+}
+
 inline std::optional<OpusMixResult> mixDirectory(const std::filesystem::path& directory, std::string& error) {
     std::vector<std::filesystem::path> files;
     std::error_code ec;
