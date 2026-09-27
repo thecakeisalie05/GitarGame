@@ -191,7 +191,7 @@ $timingNew = @'
 if (-not $text.Contains($timingOld)) { throw 'Could not locate alpha.13 gameplay timing preamble' }
 $text = $text.Replace($timingOld, $timingNew)
 
-$inputPattern = '(?ms)#ifdef _WIN32\r?\n                    const WORD xb = poller\.buttons\(\);.*?#endif\r?\n                    const uint8_t kbHeld = heldMaskFromKeyboard\(\);.*?(?=                    const float step =)'
+$inputPattern = '(?ms)#ifdef _WIN32\r?\n                    const WORD xb = poller\.buttons\(\);.*?#endif\r?\n                    const uint8_t kbHeld = heldMaskFromKeyboard\(\);.*?if \(IsKeyPressed\(KEY_TAB\)\) activateStarPowerV7\(session\);'
 $inputReplacement = @'
 #ifdef _WIN32
                     // Consume XInput changes in polling order. All button changes
@@ -288,6 +288,7 @@ $inputReplacement = @'
                     // this frame have had a chance to be judged.
                     advanceMisses(session, now, window);
                     updateGameplayStateV7(session, now, window);
+                    if (IsKeyPressed(KEY_TAB)) activateStarPowerV7(session);
 '@
 $updated = [regex]::Replace($text, $inputPattern, $inputReplacement.TrimEnd(), 1)
 if ($updated -eq $text) { throw 'Could not replace gameplay input loop for alpha.16' }
