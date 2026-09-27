@@ -18,10 +18,11 @@ std::string wideToUtf8(const wchar_t* value) {
     if (!value || !*value) return {};
     const int needed = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value, -1, nullptr, 0, nullptr, nullptr);
     if (needed <= 1) return {};
-    std::string out(static_cast<size_t>(needed - 1), '\0');
+    std::string out(static_cast<size_t>(needed), '\0');
     const int written = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value, -1,
                                             out.data(), needed, nullptr, nullptr);
     if (written <= 1) return {};
+    out.resize(static_cast<size_t>(written - 1));
     return out;
 }
 
