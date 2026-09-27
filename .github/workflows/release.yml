@@ -1,4 +1,4 @@
-# Alpha.15 release validation workflow
+# Alpha.16 release validation workflow
 name: Build and Release Alpha
 
 on:
@@ -35,47 +35,55 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.15-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.16-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.15-win64
+          name: GitarGame-v0.1.0-alpha.16-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.15-win64.zip
+            dist/GitarGame-v0.1.0-alpha.16-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.15
-          name: GitarGame v0.1.0-alpha.15
+          tag_name: v0.1.0-alpha.16
+          name: GitarGame v0.1.0-alpha.16
           prerelease: true
           make_latest: false
           body: |
-            Windows hardening release on top of alpha.14.
+            Clone Hero-like timing/input engine pass on top of alpha.15.
 
-            Native folder picker:
-            - Removes the runtime PowerShell/WinForms folder-picker bridge from GitarGame.exe
-            - Uses the Windows Common Item Dialog (IFileDialog/FOS_PICKFOLDERS) directly
-            - Keeps COM/shell headers isolated in a tiny helper library so they cannot collide with raylib
-            - Uses GitarGame's native HWND as the dialog owner
-            - Temporarily leaves fullscreen while the native dialog is open, then restores fullscreen and focus
-            - Preserves UTF-8 song-directory paths through explicit UTF-16 to UTF-8 conversion
-            - Source generation fails if the old powershell.exe/_popen/WinForms bridge is still present
+            Timing and responsiveness:
+            - Changes the clean-install hit window from +/-120 ms to a CH-like +/-70 ms baseline (~140 ms total)
+            - Existing configs still on the historical 120 ms default are migrated once; custom window values are preserved
+            - Clarifies the settings UI as half-window and total-window timing
+            - Judges XInput actions at their 1000 Hz poll timestamps instead of the later render-frame timestamp
+            - Preserves the complete controller-button snapshot for every poll event
+            - Defers frame-wide miss commitment until timestamped inputs have been processed
+            - Groups simultaneous fret/strum changes from the same poll as one musical action
 
-            Release intent:
-            - Rebuilds the executable after alpha.14 was reported as "Virus detected" by Edge/Defender
-            - Does not disable, bypass or whitelist antivirus protection
-            - Keeps alpha.14 gameplay visuals and all previous compatibility/calibration behavior
+            Guitar rules:
+            - HOPO fret transitions require an active combo; HOPOs can always still be strummed
+            - Taps remain fret-hittable without an active combo
+            - Implements actual pull-offs by recognizing higher-fret releases that reveal the target fret
+            - Implements open HOPO/open tap hits by releasing all frets at the correct time
+            - Preserves lower-fret anchoring for single notes and exact matching for chords
+            - Overstrums now also invalidate an active Star Power phrase
+            - Keyboard follows the same press/release semantics, though XInput retains the higher-resolution timestamps
 
-            Existing alpha.14 gameplay readability, alpha.13 previews/song completion,
-            alpha.12 calibration, MIDI/Opus compatibility and chart verification remain intact.
+            Verification:
+            - Adds a dedicated guitar-engine regression suite covering anchoring, chords, HOPO combo gating,
+              pull-offs, taps, open fret-release notes, hit-window boundaries, and timestamp mapping
+
+            Existing alpha.15 native Windows picker hardening, alpha.14 visuals,
+            alpha.13 previews/song completion, calibration, MIDI/Opus compatibility and chart verification remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.15-win64.zip
+            dist/GitarGame-v0.1.0-alpha.16-win64.zip
