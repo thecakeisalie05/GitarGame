@@ -17,7 +17,7 @@ GitarGame is a deliberately small, Windows-first five-fret chart player focused 
 - Main menu, song browser, pause menu, settings, and robust A/V calibration screens
 - Guitar-driven UI navigation
 - Album/cover art, common `song.ini` metadata, and automatic song previews in the song browser
-- Configurable highway speed/length/width, note size, camera FOV, colors, FPS, input polling, hit window, volume, audio/input offset, and video offset; the default timing window is ±70 ms (~140 ms total)
+- Configurable highway speed/length/width, note size, camera FOV, colors, FPS, input polling, hit window, volume, audio/input offset, and video offset; the default timing window is ±90 ms (~180 ms total), with the low-latency event path still fully configurable
 - Native Windows Common Item Dialog song-folder picker (no runtime PowerShell/WinForms bridge)
 - Persistent startup/crash log plus Windows minidumps and release PDB symbols
 
@@ -89,7 +89,7 @@ The calibration screen provides three modes:
 - **Audio / input only** — strum when each click is heard.
 - **Video only** — strum when an alternating-direction marker crosses the center target.
 
-Each pass collects repeated high-resolution input timestamps, rejects outliers with a robust median/MAD-style estimator, and reports accepted samples, spread, and a quality label before saving. The visual test alternates direction to reduce anticipation bias. Results can still be fine-tuned in 5 ms steps.
+Each pass collects repeated high-resolution input timestamps, rejects outliers with a robust median/MAD-style estimator, and reports accepted samples, spread, and a quality label before saving. The visual test alternates direction to reduce anticipation bias. Results can still be fine-tuned in 5 ms steps. On Windows the final audio/input and video offsets are also mirrored to `%LOCALAPPDATA%\\GitarGame\\calibration.ini`, so calibration survives restarts and replacing/moving a portable executable.
 
 Manual audio/input timing adjustment also remains available during gameplay:
 
@@ -117,7 +117,7 @@ Manual audio/input timing adjustment also remains available during gameplay:
 
 Rendering, audio, and input sampling are intentionally decoupled. The 3D highway is a tiny scene consisting of a two-triangle road, simple guide lines, low-poly note discs, and boxes for sustains. XInput polling runs on a separate thread and can target 60–4000 Hz independently of the render FPS cap.
 
-The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. XInput transitions are timestamped on the polling thread and mapped back into song time before judgment, preventing render-frame latency from widening or shifting the effective hit window. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Hit animations use realtime hit timestamps, so visual calibration does not stretch or delay the note-shaped bloom feedback.
+The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. XInput transitions are timestamped on the polling thread and mapped back into song time before judgment, preventing render-frame latency from widening or shifting the effective hit window. Normal HOPO/tap play also supports an early frontend buffer: a valid fret transition can be armed before the window and consumed when the front edge arrives, while Precision-style behavior remains a possible future modifier. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Hit animations use realtime hit timestamps, so visual calibration does not stretch or delay the note-shaped bloom feedback.
 
 ## Build
 
