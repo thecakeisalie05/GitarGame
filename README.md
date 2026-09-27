@@ -18,7 +18,7 @@ GitarGame is a deliberately small, Windows-first five-fret chart player focused 
 - Guitar-driven UI navigation
 - Album/cover art, common `song.ini` metadata, and automatic song previews in the song browser
 - Configurable highway speed/length/width, note size, camera FOV, colors, FPS, input polling, hit window, volume, audio/input offset, and video offset
-- Native Windows song-folder picker
+- Native Windows Common Item Dialog song-folder picker (no runtime PowerShell/WinForms bridge)
 - Persistent startup/crash log plus Windows minidumps and release PDB symbols
 
 This is still an alpha reference player rather than a behavioral clone of Clone Hero. Practice mode, whammy behavior, broader instrument/difficulty selection, advanced edge cases, and non-XInput HID/Raw Input backends are still planned rather than silently approximated.
@@ -62,7 +62,7 @@ Songs/
     album.png
 ```
 
-The song directory can be changed in **Settings > Song Library** using the Windows folder picker.
+The song directory can be changed in **Settings > Song Library** using an owned native Windows Common Item Dialog. In fullscreen, GitarGame temporarily leaves fullscreen while the picker is open and restores the game afterward.
 
 Song select automatically previews the highlighted song after a short debounce. GitarGame honors `preview_start_time` / `preview_end_time` from `song.ini`, prefers dedicated `preview.*` audio (including `preview.opus`), and otherwise falls back to a bounded segment of the regular stems. Finishing a song automatically returns to song select with that song still highlighted.
 
@@ -133,6 +133,8 @@ cmake --build build --config Release
 ```
 
 raylib 5.5 is fetched automatically at configure time and linked statically.
+
+On Windows, the song-folder picker is compiled as a small isolated COM/shell helper using `IFileDialog`, keeping shell headers out of the raylib translation unit.
 
 ## Roadmap
 
