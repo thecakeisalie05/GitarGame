@@ -4,10 +4,10 @@ GitarGame is a deliberately small, Windows-first five-fret chart player focused 
 
 ## Current alpha scope
 
-- Clone Hero-style `notes.chart` parsing for `ExpertSingle`
-- `.ogg`, `.mp3`, `.wav`, and `.flac` streaming through raylib
+- Clone Hero-style `notes.chart` and Rock Band/Guitar Hero-style `notes.mid` guitar parsing
+- `.ogg`, `.mp3`, `.wav`, `.flac`, and mixed `.opus` song-package playback
 - Multiple audio stems from the song folder
-- Basic chords, sustains, HOPO inference, forced-HOPO markers, and tap markers
+- Chords, clearer sustain holds, HOPO/forced/tap markers, hit flashes, receptor ripples, Star Power phrases, and miss feedback
 - Lightweight real-perspective 3D highway
 - Audio playback as the gameplay master clock
 - `.chart` `Offset`, `song.ini` `delay`, and separate audio/input + video calibration handling
@@ -16,12 +16,12 @@ GitarGame is a deliberately small, Windows-first five-fret chart player focused 
 - Independent configurable XInput polling thread
 - Main menu, song browser, pause menu, settings, and robust A/V calibration screens
 - Guitar-driven UI navigation
-- Album/cover art and common `song.ini` metadata in the song browser
+- Album/cover art, common `song.ini` metadata, and automatic song previews in the song browser
 - Configurable highway speed/length/width, note size, camera FOV, colors, FPS, input polling, hit window, volume, audio/input offset, and video offset
 - Native Windows song-folder picker
 - Persistent startup/crash log plus Windows minidumps and release PDB symbols
 
-This is still an alpha reference player rather than a behavioral clone of Clone Hero. Open notes, MIDI charts, practice mode, whammy/star-power gameplay, per-instrument tracks, advanced HOPO edge cases, and non-XInput HID/Raw Input backends are planned rather than silently approximated.
+This is still an alpha reference player rather than a behavioral clone of Clone Hero. Practice mode, whammy behavior, broader instrument/difficulty selection, advanced edge cases, and non-XInput HID/Raw Input backends are still planned rather than silently approximated.
 
 ## Download
 
@@ -43,7 +43,7 @@ Keyboard equivalents are the arrow/WASD keys, Enter, and Escape.
 
 ## Song browser
 
-GitarGame scans recursively for `notes.chart`. Selected songs can display common metadata such as album, year, genre, and charter plus artwork discovered from common filenames including:
+GitarGame scans recursively for `notes.chart`, `notes.mid`, and `notes.midi`. Selected songs can display common metadata such as album, year, genre, and charter plus artwork discovered from common filenames including:
 
 - `album.png`, `album.jpg`, `album.jpeg`
 - `cover.png`, `cover.jpg`, `cover.jpeg`
@@ -63,6 +63,8 @@ Songs/
 ```
 
 The song directory can be changed in **Settings > Song Library** using the Windows folder picker.
+
+Song select automatically previews the highlighted song after a short debounce. GitarGame honors `preview_start_time` / `preview_end_time` from `song.ini`, prefers dedicated `preview.*` audio (including `preview.opus`), and otherwise falls back to a bounded segment of the regular stems. Finishing a song automatically returns to song select with that song still highlighted.
 
 ## Settings
 
@@ -115,7 +117,7 @@ Manual audio/input timing adjustment also remains available during gameplay:
 
 Rendering, audio, and input sampling are intentionally decoupled. The 3D highway is a tiny scene consisting of a two-triangle road, simple guide lines, low-poly note discs, and boxes for sustains. XInput polling runs on a separate thread and can target 60–4000 Hz independently of the render FPS cap.
 
-The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock.
+The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Receptor-hit animation uses realtime hit timestamps, so visual calibration does not stretch or delay the ripple feedback.
 
 ## Build
 
@@ -135,8 +137,8 @@ raylib 5.5 is fetched automatically at configure time and linked statically.
 ## Roadmap
 
 1. Raw Input / HID backend for guitars that do not expose useful XInput mappings.
-2. MIDI (`notes.mid`) compatibility and more chart tracks/difficulties.
-3. More exact Clone Hero HOPO/strum/fret semantics with regression tests.
+2. More chart tracks/difficulties and instrument selection.
+3. More exact Clone Hero HOPO/strum/fret/sustain scoring semantics with regression tests.
 4. Practice speed, section looping, and chart inspection.
 5. More song-browser filtering/search and additional UI polish.
 6. ChartForge integration as a deterministic reference/QA player.
