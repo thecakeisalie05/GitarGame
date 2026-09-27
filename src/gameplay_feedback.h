@@ -21,6 +21,50 @@ inline double rippleStrength(double ageSeconds, double durationSeconds = 0.42) {
     return ease * ease;
 }
 
+inline double hitBloomProgress(double ageSeconds, double durationSeconds = 0.34) {
+    if (durationSeconds <= 0.0) return 1.0;
+    return clamp01(ageSeconds / durationSeconds);
+}
+
+inline double hitBloomAlpha(double ageSeconds, double durationSeconds = 0.34) {
+    if (ageSeconds < 0.0) return 0.0;
+    const double p = hitBloomProgress(ageSeconds, durationSeconds);
+    if (p >= 1.0) return 0.0;
+    const double remaining = 1.0 - p;
+    return remaining * remaining;
+}
+
+inline double hitBloomScale(double ageSeconds, double durationSeconds = 0.34) {
+    const double p = hitBloomProgress(ageSeconds, durationSeconds);
+    // Fast initial pop, then a smaller outward drift as the ghost fades.
+    return 1.0 + 0.34 * (1.0 - std::pow(1.0 - p, 2.0));
+}
+
+inline double missProgress(double ageSeconds, double durationSeconds = 0.46) {
+    if (durationSeconds <= 0.0) return 1.0;
+    return clamp01(std::max(0.0, ageSeconds) / durationSeconds);
+}
+
+inline double missRedBlend(double ageSeconds, double durationSeconds = 0.46) {
+    const double p = missProgress(ageSeconds, durationSeconds);
+    // Red arrives quickly so the miss is legible before the gem travels far
+    // past the strike line.
+    return 1.0 - std::pow(1.0 - p, 4.0);
+}
+
+inline double missScale(double ageSeconds, double durationSeconds = 0.46) {
+    const double p = missProgress(ageSeconds, durationSeconds);
+    const double throb = std::sin(std::min(1.0, p * 2.0) * 3.14159265358979323846);
+    return 1.0 + 0.07 * throb - 0.10 * p;
+}
+
+inline double missAlpha(double ageSeconds, double durationSeconds = 0.46) {
+    const double p = missProgress(ageSeconds, durationSeconds);
+    if (p < 0.42) return 1.0;
+    const double fade = (p - 0.42) / 0.58;
+    return std::clamp(1.0 - 0.58 * fade, 0.42, 1.0);
+}
+
 inline bool sustainHolding(bool noteHit, double noteTime, double sustainSeconds,
                            double now, bool heldCorrect) {
     if (!noteHit || sustainSeconds <= 0.03 || !heldCorrect) return false;
