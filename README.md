@@ -17,7 +17,7 @@ GitarGame is a deliberately small, Windows-first five-fret chart player focused 
 - Main menu, song browser, pause menu, settings, and robust A/V calibration screens
 - Guitar-driven UI navigation
 - Album/cover art, common `song.ini` metadata, and automatic song previews in the song browser
-- Configurable highway speed/length/width, note size, camera FOV, colors, FPS, input polling, hit window, volume, audio/input offset, and video offset
+- Configurable highway speed/length/width, note size, camera FOV, colors, FPS, input polling, hit window, volume, audio/input offset, and video offset; the default timing window is ±70 ms (~140 ms total)
 - Native Windows Common Item Dialog song-folder picker (no runtime PowerShell/WinForms bridge)
 - Persistent startup/crash log plus Windows minidumps and release PDB symbols
 
@@ -117,7 +117,7 @@ Manual audio/input timing adjustment also remains available during gameplay:
 
 Rendering, audio, and input sampling are intentionally decoupled. The 3D highway is a tiny scene consisting of a two-triangle road, simple guide lines, low-poly note discs, and boxes for sustains. XInput polling runs on a separate thread and can target 60–4000 Hz independently of the render FPS cap.
 
-The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Hit animations use realtime hit timestamps, so visual calibration does not stretch or delay the note-shaped bloom feedback.
+The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. XInput transitions are timestamped on the polling thread and mapped back into song time before judgment, preventing render-frame latency from widening or shifting the effective hit window. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Hit animations use realtime hit timestamps, so visual calibration does not stretch or delay the note-shaped bloom feedback.
 
 ## Build
 
@@ -140,7 +140,7 @@ On Windows, the song-folder picker is compiled as a small isolated COM/shell hel
 
 1. Raw Input / HID backend for guitars that do not expose useful XInput mappings.
 2. More chart tracks/difficulties and instrument selection.
-3. More exact Clone Hero HOPO/strum/fret/sustain scoring semantics with regression tests.
+3. Continue closing remaining Clone Hero scoring/sustain/Star Power edge cases with regression tests.
 4. Practice speed, section looping, and chart inspection.
 5. More song-browser filtering/search and additional UI polish.
 6. ChartForge integration as a deterministic reference/QA player.
