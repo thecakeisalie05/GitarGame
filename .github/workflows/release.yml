@@ -1,5 +1,4 @@
-# Alpha.12 validation trigger
-# Alpha.12 release validation workflow
+# Alpha.13 release validation workflow
 name: Build and Release Alpha
 
 on:
@@ -36,50 +35,53 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.12-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.13-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.12-win64
+          name: GitarGame-v0.1.0-alpha.13-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.12-win64.zip
+            dist/GitarGame-v0.1.0-alpha.13-win64.zip
 
       - name: Publish alpha release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.12
-          name: GitarGame v0.1.0-alpha.12
+          tag_name: v0.1.0-alpha.13
+          name: GitarGame v0.1.0-alpha.13
           prerelease: true
           make_latest: false
           body: |
-            Robust A/V calibration and UI motion pass on top of alpha.11.
+            Gameplay feedback and song-flow polish on top of alpha.12.
 
-            Calibration:
-            - Adds separate persisted audio/input and video offsets
-            - Audio/input calibration affects hit judgment; video calibration affects rendering only
-            - Full A/V mode performs an audible-click pass followed by a visual crossing pass
-            - Adds dedicated Audio-only and Video-only calibration modes
-            - Video calibration alternates marker direction to reduce anticipation bias
-            - Uses robust median/MAD-style outlier rejection instead of a raw one-shot average
-            - Reports accepted sample count, spread and quality before applying
-            - Settings > Video now exposes manual video offset and direct auto video calibration
-            - Adds release-gated calibration estimator regression tests
+            Gameplay feedback:
+            - Fret receptors flash on successful hits with projected expanding ripple rings
+            - Chords ripple every struck receptor; open notes pulse the full receptor row
+            - Successful sustains become brighter/wider while the required frets remain held
+            - Active sustains gain a luminous core and keep their receptor visibly latched
+            - Hit-effect timing uses realtime hit timestamps so video calibration cannot skew animation timing
+            - Adds release-gated gameplay feedback/preview timing regression tests
 
-            UI motion:
-            - Menu selections ease between rows instead of snapping
-            - Selected buttons get restrained pulse/glow and text-slide feedback
-            - Settings category and settings-row selection now animate
-            - Main-menu lane streaks have subtle ambient motion
+            Song browser:
+            - Adds automatic song previews after a short selection debounce
+            - Honors song.ini preview_start_time / preview_end_time in milliseconds
+            - Prefers dedicated preview audio when present
+            - Adds native preview.opus decoding so Rock Band/YARG packages do not need full multistem mixing for previews
+            - Falls back to a bounded regular-stem preview segment when no dedicated preview exists
+            - Preview audio stops cleanly before gameplay and when leaving song select
 
-            All alpha.11 MIDI sustain compatibility, alpha.10 fullscreen folder picker,
-            alpha.9 MIDI/Opus song support, chart verification and gameplay feedback remain intact.
+            Song flow:
+            - Detects actual audio completion and automatically returns to song select
+            - Keeps the just-played song selected so browsing can continue naturally
+
+            All alpha.12 A/V calibration, alpha.11 MIDI sustain compatibility,
+            alpha.10 fullscreen folder picker, and alpha.9 MIDI/Opus song support remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.12-win64.zip
+            dist/GitarGame-v0.1.0-alpha.13-win64.zip
