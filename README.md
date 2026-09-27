@@ -7,8 +7,8 @@ GitarGame is a deliberately small, Windows-first five-fret chart player focused 
 - Clone Hero-style `notes.chart` and Rock Band/Guitar Hero-style `notes.mid` guitar parsing
 - `.ogg`, `.mp3`, `.wav`, `.flac`, and mixed `.opus` song-package playback
 - Multiple audio stems from the song folder
-- Chords, clearer sustain holds, HOPO/forced/tap markers, hit flashes, receptor ripples, Star Power phrases, and miss feedback
-- Lightweight real-perspective 3D highway
+- Chords, clearer sustain holds, HOPO/forced/tap markers, note-shaped hit blooms, visible fret receptors, Star Power phrases, and animated miss feedback
+- Lightweight real-perspective 3D highway with elevated fret receptors, musical grid lines, shaped hit blooms, and animated miss gems
 - Audio playback as the gameplay master clock
 - `.chart` `Offset`, `song.ini` `delay`, and separate audio/input + video calibration handling
 - Keyboard play (`A S J K L`, strum with `Up/Down`)
@@ -117,7 +117,7 @@ Manual audio/input timing adjustment also remains available during gameplay:
 
 Rendering, audio, and input sampling are intentionally decoupled. The 3D highway is a tiny scene consisting of a two-triangle road, simple guide lines, low-poly note discs, and boxes for sustains. XInput polling runs on a separate thread and can target 60–4000 Hz independently of the render FPS cap.
 
-The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Receptor-hit animation uses realtime hit timestamps, so visual calibration does not stretch or delay the ripple feedback.
+The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Hit animations use realtime hit timestamps, so visual calibration does not stretch or delay the note-shaped bloom feedback.
 
 ## Build
 
