@@ -13,6 +13,17 @@ int main() {
     assert(ggfeedback::rippleStrength(0.10) > 0.0);
     assert(near(ggfeedback::rippleStrength(1.0), 0.0));
 
+    assert(near(ggfeedback::hitBloomProgress(0.0), 0.0));
+    assert(ggfeedback::hitBloomAlpha(0.05) > 0.0);
+    assert(ggfeedback::hitBloomScale(0.20) > 1.0);
+    assert(near(ggfeedback::hitBloomAlpha(1.0), 0.0));
+
+    assert(near(ggfeedback::missRedBlend(0.0), 0.0));
+    assert(ggfeedback::missRedBlend(0.18) > 0.70);
+    assert(ggfeedback::missScale(0.10) > 1.0);
+    assert(ggfeedback::missScale(0.46) < 1.0);
+    assert(ggfeedback::missAlpha(0.10) > ggfeedback::missAlpha(0.46));
+
     assert(ggfeedback::sustainHolding(true, 2.0, 1.0, 2.4, true));
     assert(!ggfeedback::sustainHolding(true, 2.0, 1.0, 2.4, false));
     assert(!ggfeedback::sustainHolding(false, 2.0, 1.0, 2.4, true));
