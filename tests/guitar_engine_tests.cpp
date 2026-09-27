@@ -40,6 +40,15 @@ int main() {
     assert(!canFretTransitionHit(true, false, true, 0, 0, 0, 0, 0b00010));
     assert(canFretTransitionHit(false, true, true, 0, 0, 0, 0, 0b00010));
 
+    // Clone Hero-like frontend buffering remains armed only while the target
+    // fret state is still physically valid. HOPOs lose the arm if combo breaks;
+    // taps do not.
+    assert(frontendHeldStillValid(true, false, false, 5, 0b00011, 0b00010));
+    assert(!frontendHeldStillValid(true, false, false, 0, 0b00011, 0b00010));
+    assert(frontendHeldStillValid(false, true, false, 0, 0b01000, 0b01000));
+    assert(frontendHeldStillValid(true, false, true, 3, 0, 0));
+    assert(!frontendHeldStillValid(true, false, true, 0, 0, 0));
+
     // Poll timestamp mapping removes render-frame delay.
     assert(near(eventSongTime(10.000, 0.006), 9.994));
     assert(near(eventSongTime(10.000, -0.001), 10.000));
