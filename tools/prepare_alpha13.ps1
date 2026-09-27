@@ -385,8 +385,8 @@ $previewLoop = @'
 if (-not $text.Contains($loopMarker)) { throw 'Could not locate main switch loop for preview update' }
 $text = $text.Replace($loopMarker, $previewLoop.TrimEnd())
 
-$browserLoadOld = 'if ((nav.accept || nav.start) && !songs.empty()) { if (loadSong(session, songs[selectedSong]))'
-$browserLoadNew = 'if ((nav.accept || nav.start) && !songs.empty()) { songPreview.clearRequest(); if (loadSong(session, songs[selectedSong]))'
+$browserLoadOld = 'if ((nav.accept || nav.start) && !songs.empty()) { if (loadSongV7(session, songs[selectedSong]))'
+$browserLoadNew = 'if ((nav.accept || nav.start) && !songs.empty()) { songPreview.clearRequest(); if (loadSongV7(session, songs[selectedSong]))'
 if (-not $text.Contains($browserLoadOld)) { throw 'Could not locate browser Play action for preview stop' }
 $text = $text.Replace($browserLoadOld, $browserLoadNew)
 
