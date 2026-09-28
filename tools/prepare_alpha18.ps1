@@ -257,8 +257,10 @@ $text = $text.Replace('v0.1.0-alpha.17', 'v0.1.0-alpha.18')
 
 # Clone Hero exposes these as profile settings. Keep zero as the neutral default
 # until the player selects the same values used by their CH profile.
-$text = $text.Replace('    float hitWindowMs = 90.0f;',
-                      '    float hitWindowMs = 90.0f;' + $nl +
+$settingsNeedle = '    float hitWindowMs = 120.0f;'
+if (-not $text.Contains($settingsNeedle)) { throw 'Could not locate Settings hit-window field for alpha.18 profile settings' }
+$text = $text.Replace($settingsNeedle,
+                      $settingsNeedle + $nl +
                       '    float doubleStrumProtectionMs = 0.0f;' + $nl +
                       '    float sustainDropLeniencyMs = 0.0f;')
 $text = $text.Replace(
@@ -318,6 +320,17 @@ $text = $text.Replace(
     '                    if (kbStrumV16) {' + $nl +
     '                        const auto kbDirectionV18 = kbUpV18 ? ggengine::StrumDirection::Up : ggengine::StrumDirection::Down;' + $nl +
     '                        tryHit(session, now, window, kbHeld, true, 0, kbDirectionV18, cfg.doubleStrumProtectionMs / 1000.0);'
+)
+
+# main_v3.cpp includes generated main.cpp inside namespace legacy, so its static
+# Star Power helper is not directly visible here. Inline the tiny activation rule.
+$text = $text.Replace(
+    'if (starPowerDown) activateStarPowerV7(session);',
+    'if (starPowerDown && !session.starPowerActive && session.starPowerMeter >= 0.50f) session.starPowerActive = true;'
+)
+$text = $text.Replace(
+    'if (IsKeyPressed(KEY_TAB)) activateStarPowerV7(session);',
+    'if (IsKeyPressed(KEY_TAB) && !session.starPowerActive && session.starPowerMeter >= 0.50f) session.starPowerActive = true;'
 )
 
 # Pending strums must be reevaluated whenever time or fret state advances.
