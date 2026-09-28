@@ -257,7 +257,10 @@ $text = $text.Replace('v0.1.0-alpha.17', 'v0.1.0-alpha.18')
 
 # Clone Hero exposes these as profile settings. Keep zero as the neutral default
 # until the player selects the same values used by their CH profile.
-$settingsNeedle = '    float hitWindowMs = 120.0f;'
+$settingsNeedle = '    float hitWindowMs = 70.0f;'
+if (-not $text.Contains($settingsNeedle)) {
+    $settingsNeedle = '    float hitWindowMs = 90.0f;'
+}
 if (-not $text.Contains($settingsNeedle)) { throw 'Could not locate Settings hit-window field for alpha.18 profile settings' }
 $text = $text.Replace($settingsNeedle,
                       $settingsNeedle + $nl +
