@@ -27,12 +27,14 @@ $newState = @'
     double pendingStrumAt = -1000.0;
     bool hopoStrumEatAvailable = false;
     double hopoStrumEatUntil = -1000.0;
+    ggengine::StrumDirection lastStrumDirection = ggengine::StrumDirection::None;
+    double lastAcceptedStrumAt = -1000.0;
 '@.TrimEnd()
 if (-not $legacy.Contains($oldState)) { throw 'Could not locate alpha.17 frontend state for alpha.18' }
 $legacy = $legacy.Replace($oldState, $newState)
 
 $resetOld = 's.frontendArmedNote = static_cast<size_t>(-1);'
-$resetNew = 's.chTapReady = false; s.pendingStrum = false; s.pendingStrumAt = -1000.0; s.hopoStrumEatAvailable = false; s.hopoStrumEatUntil = -1000.0;'
+$resetNew = 's.chTapReady = false; s.pendingStrum = false; s.pendingStrumAt = -1000.0; s.hopoStrumEatAvailable = false; s.hopoStrumEatUntil = -1000.0; s.lastStrumDirection = ggengine::StrumDirection::None; s.lastAcceptedStrumAt = -1000.0;'
 # The first occurrence is resetChartState; later alpha.17 occurrences are patched separately below.
 $resetIndex = $legacy.IndexOf($resetOld)
 if ($resetIndex -lt 0) { throw 'Could not locate alpha.17 reset state for alpha.18' }
@@ -144,9 +146,19 @@ static bool tryConsumePendingStrumV18(Session& s, double now, double window,
 }
 
 static bool tryHit(Session& s, double now, double window, uint8_t held,
-                   bool strum, uint8_t pressedFret = 0) {
+                   bool strum, uint8_t pressedFret = 0,
+                   ggengine::StrumDirection direction = ggengine::StrumDirection::None,
+                   double doubleStrumProtectionSeconds = 0.0) {
     (void) pressedFret;
     if (!strum) return false;
+
+    if (ggengine::sameDirectionStrumProtected(
+            s.lastStrumDirection, s.lastAcceptedStrumAt, direction, now,
+            doubleStrumProtectionSeconds)) {
+        return false;
+    }
+    s.lastStrumDirection = direction;
+    s.lastAcceptedStrumAt = now;
 
     const double hopoEat = ggengine::kCloneHeroHopoStrumEatMs / 1000.0;
     if (s.hopoStrumEatAvailable) {
@@ -243,6 +255,23 @@ if ($legacy.Contains('frontendArmedNote') -or $legacy.Contains('tryConsumeFronte
 $text = [System.IO.File]::ReadAllText($OutputPath)
 $text = $text.Replace('v0.1.0-alpha.17', 'v0.1.0-alpha.18')
 
+# Clone Hero exposes these as profile settings. Keep zero as the neutral default
+# until the player selects the same values used by their CH profile.
+$text = $text.Replace('    float hitWindowMs = 90.0f;',
+                      '    float hitWindowMs = 90.0f;' + $nl +
+                      '    float doubleStrumProtectionMs = 0.0f;' + $nl +
+                      '    float sustainDropLeniencyMs = 0.0f;')
+$text = $text.Replace(
+    'else if (key == "hit_window_ms") s.hitWindowMs = clampFloat(std::stof(value), 20.0f, 250.0f);',
+    'else if (key == "hit_window_ms") s.hitWindowMs = clampFloat(std::stof(value), 20.0f, 250.0f);' + $nl +
+    '            else if (key == "double_strum_protection_ms") s.doubleStrumProtectionMs = clampFloat(std::stof(value), 0.0f, 250.0f);' + $nl +
+    '            else if (key == "sustain_drop_leniency_ms") s.sustainDropLeniencyMs = clampFloat(std::stof(value), 0.0f, 250.0f);'
+)
+$text = $text.Replace(
+    'out << "hit_window_ms = " << s.hitWindowMs << "\naudio_offset_ms = " << s.audioOffsetMs',
+    'out << "hit_window_ms = " << s.hitWindowMs << "\ndouble_strum_protection_ms = " << s.doubleStrumProtectionMs << "\nsustain_drop_leniency_ms = " << s.sustainDropLeniencyMs << "\naudio_offset_ms = " << s.audioOffsetMs'
+)
+
 # Restore the core window to the documented CH +/-70ms and migrate only the
 # untouched alpha.17 +/-90ms default. Custom windows remain custom.
 $text = $text.Replace('cfg.hitWindowMs = 90.0f;' + $nl + '        cfg.engineRulesVersion = 17;',
@@ -259,6 +288,37 @@ $text = $text.Replace('alpha.17 gameplay rules migrated:', 'alpha.18 Clone Hero 
 # Swap alpha.17 calls for the new state machine.
 $text = $text.Replace('tryConsumeFrontendV17(', 'tryConsumeFrontendV18(')
 $text = $text.Replace('tryFretTransitionV17(', 'tryFretTransitionV18(')
+
+# Preserve physical strum direction for CH's same-direction Double Strum
+# Protection. Opposite-direction alt-strums must never be swallowed.
+$text = $text.Replace(
+    'bool strumDown = false;' + $nl + '                        bool startDown = false;',
+    'bool strumDown = false;' + $nl +
+    '                        ggengine::StrumDirection strumDirectionV18 = ggengine::StrumDirection::None;' + $nl +
+    '                        bool startDown = false;'
+)
+$text = $text.Replace(
+    'if (ev.down && (ev.bit == cfg.strumUp || ev.bit == cfg.strumDown)) strumDown = true;',
+    'if (ev.down && (ev.bit == cfg.strumUp || ev.bit == cfg.strumDown)) {' + $nl +
+    '                                strumDown = true;' + $nl +
+    '                                strumDirectionV18 = (ev.bit == cfg.strumUp) ? ggengine::StrumDirection::Up : ggengine::StrumDirection::Down;' + $nl +
+    '                            }'
+)
+$text = $text.Replace(
+    'tryHit(session, eventNow, window, heldAtEvent, true);',
+    'tryHit(session, eventNow, window, heldAtEvent, true, 0, strumDirectionV18, cfg.doubleStrumProtectionMs / 1000.0);'
+)
+$text = $text.Replace(
+    'const bool kbStrumV16 = IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_DOWN);' + $nl +
+    '                    if (kbStrumV16) {' + $nl +
+    '                        tryHit(session, now, window, kbHeld, true);',
+    'const bool kbUpV18 = IsKeyPressed(KEY_UP);' + $nl +
+    '                    const bool kbDownV18 = IsKeyPressed(KEY_DOWN);' + $nl +
+    '                    const bool kbStrumV16 = kbUpV18 || kbDownV18;' + $nl +
+    '                    if (kbStrumV16) {' + $nl +
+    '                        const auto kbDirectionV18 = kbUpV18 ? ggengine::StrumDirection::Up : ggengine::StrumDirection::Down;' + $nl +
+    '                        tryHit(session, now, window, kbHeld, true, 0, kbDirectionV18, cfg.doubleStrumProtectionMs / 1000.0);'
+)
 
 # Pending strums must be reevaluated whenever time or fret state advances.
 $xinputConsumeOld = @'
