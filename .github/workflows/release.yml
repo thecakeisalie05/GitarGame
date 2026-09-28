@@ -4,6 +4,8 @@ name: Build and Release Alpha
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -49,6 +51,7 @@ jobs:
             dist/GitarGame-v0.1.0-alpha.18-win64.zip
 
       - name: Publish alpha release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0.1.0-alpha.18
