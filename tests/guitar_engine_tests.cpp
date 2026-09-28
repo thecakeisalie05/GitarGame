@@ -68,6 +68,24 @@ int main() {
     assert(canFretTransitionHit(true, false, false, 8, 0b00111, 0b00110, 0b00100, 0));
     assert(canFretTransitionHit(false, true, false, 0, 0b00111, 0b00110, 0b00100, 0));
 
+    // Double-strum protection is direction-specific: repeated down/down can be
+    // ignored, but down/up remains a legitimate alt-strum even at the same
+    // spacing. Zero disables the profile setting.
+    assert(sameDirectionStrumProtected(StrumDirection::Down, 20.000,
+                                       StrumDirection::Down, 20.025, 0.030));
+    assert(!sameDirectionStrumProtected(StrumDirection::Down, 20.000,
+                                        StrumDirection::Up, 20.025, 0.030));
+    assert(!sameDirectionStrumProtected(StrumDirection::Down, 20.000,
+                                        StrumDirection::Down, 20.031, 0.030));
+    assert(!sameDirectionStrumProtected(StrumDirection::Down, 20.000,
+                                        StrumDirection::Down, 20.001, 0.0));
+
+    // Sustain-drop leniency is likewise a profile parameter rather than a
+    // guessed universal CH constant.
+    assert(sustainDropIsForgiven(30.000, 30.040, 0.050));
+    assert(!sustainDropIsForgiven(30.000, 30.051, 0.050));
+    assert(!sustainDropIsForgiven(30.000, 30.001, 0.0));
+
     // Poll timestamp mapping removes render-frame delay.
     assert(near(eventSongTime(10.000, 0.006), 9.994));
     assert(near(eventSongTime(10.000, -0.001), 10.000));
