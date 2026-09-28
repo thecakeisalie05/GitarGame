@@ -17,7 +17,7 @@ GitarGame is a deliberately small, Windows-first five-fret chart player focused 
 - Main menu, song browser, pause menu, settings, and robust A/V calibration screens
 - Guitar-driven UI navigation
 - Album/cover art, common `song.ini` metadata, and automatic song previews in the song browser
-- Configurable highway speed/length/width, note size, camera FOV, colors, FPS, input polling, hit window, volume, audio/input offset, and video offset; the default timing window is ±90 ms (~180 ms total), with the low-latency event path still fully configurable
+- Configurable highway speed/length/width, note size, camera FOV, colors, FPS, input polling, hit window, volume, audio/input offset, and video offset; the default Clone Hero compatibility profile uses a ±70 ms core window plus separate early-strum/frontend leniencies, with the low-latency event path still fully configurable
 - Native Windows Common Item Dialog song-folder picker (no runtime PowerShell/WinForms bridge)
 - Persistent startup/crash log plus Windows minidumps and release PDB symbols
 
@@ -70,7 +70,7 @@ Song select automatically previews the highlighted song after a short debounce. 
 
 The in-game settings UI is grouped into:
 
-- **Gameplay** — highway speed, highway length, hit window, note size
+- **Gameplay** — highway speed, highway length, core hit window, note size
 - **Audio & Timing** — volume, audio/input offset, full A/V calibration
 - **Video** — FPS cap, VSync, fullscreen, FPS display, video offset, auto video calibration
 - **Appearance** — palette, individual lane colors, camera FOV, highway width, depth guides, album artwork
@@ -117,7 +117,7 @@ Manual audio/input timing adjustment also remains available during gameplay:
 
 Rendering, audio, and input sampling are intentionally decoupled. The 3D highway is a tiny scene consisting of a two-triangle road, simple guide lines, low-poly note discs, and boxes for sustains. XInput polling runs on a separate thread and can target 60–4000 Hz independently of the render FPS cap.
 
-The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. XInput transitions are timestamped on the polling thread and mapped back into song time before judgment, preventing render-frame latency from widening or shifting the effective hit window. Normal HOPO/tap play also supports an early frontend buffer: a valid fret transition can be armed before the window and consumed when the front edge arrives, while Precision-style behavior remains a possible future modifier. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Hit animations use realtime hit timestamps, so visual calibration does not stretch or delay the note-shaped bloom feedback.
+The gameplay clock is derived from the audio stream rather than accumulated frame deltas, so render hitches should not cause chart drift. XInput transitions are timestamped on the polling thread and mapped back into song time before judgment, preventing render-frame latency from widening or shifting the effective hit window. The default compatibility profile models Clone Hero as a ±70 ms core window plus separate forgiveness state: a 50 ms early-strum buffer, GH3-style infinite HOPO/tap frontend readiness, and a short one-strum post-HOPO eat window. These are modeled separately so the timing window itself remains meaningful. Hit judgment uses the audio/input-compensated clock, while the highway renderer uses a separate video-compensated view of that clock. Hit animations use realtime hit timestamps, so visual calibration does not stretch or delay the note-shaped bloom feedback.
 
 ## Build
 

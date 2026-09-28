@@ -18,9 +18,12 @@ int main() {
     assert(heldMatches(0b00100, 0b00100));
     assert(heldMatches(0b00111, 0b00100));
 
-    // Chords require exact fret state.
-    assert(heldMatches(0b00110, 0b00110));
-    assert(!heldMatches(0b00111, 0b00110));
+    // Strum chords require exact fret state, but CH allows lower-fret
+    // anchoring on HOPO/tap chords.
+    assert(noteFrettingMatches(0b00110, 0b00110, false, true, false, false));
+    assert(!noteFrettingMatches(0b00111, 0b00110, false, true, false, false));
+    assert(noteFrettingMatches(0b00111, 0b00110, false, false, true, false));
+    assert(!noteFrettingMatches(0b01110, 0b00110, false, false, true, false));
 
     // HOPOs require an active combo.
     assert(!canFretTransitionHit(true, false, false, 0, 0b00010, 0b00010, 0b00010, 0));
@@ -48,6 +51,40 @@ int main() {
     assert(frontendHeldStillValid(false, true, false, 0, 0b01000, 0b01000));
     assert(frontendHeldStillValid(true, false, true, 3, 0, 0));
     assert(!frontendHeldStillValid(true, false, true, 0, 0, 0));
+
+    // Clone Hero's normal guitar engine uses a +/-70 ms core window plus a
+    // lead-developer-confirmed ~50 ms early-strum leniency.
+    assert(earlyStrumCanBuffer(5.0, 4.881, 0.070, 0.050));
+    assert(!earlyStrumCanBuffer(5.0, 4.879, 0.070, 0.050));
+    assert(strumBufferActive(4.881, 4.925, 0.050));
+    assert(!strumBufferActive(4.881, 4.940, 0.050));
+
+    // A recently hit HOPO/tap may consume one nearby strum rather than turning
+    // it into an overstrum; 80 ms is the YARG-derived compatibility estimate.
+    assert(hopoCanEatStrum(10.000, 10.079, 0.080));
+    assert(!hopoCanEatStrum(10.000, 10.081, 0.080));
+
+    // Anchored HOPO/tap chords can be entered via a real fret transition.
+    assert(canFretTransitionHit(true, false, false, 8, 0b00111, 0b00110, 0b00100, 0));
+    assert(canFretTransitionHit(false, true, false, 0, 0b00111, 0b00110, 0b00100, 0));
+
+    // Double-strum protection is direction-specific: repeated down/down can be
+    // ignored, but down/up remains a legitimate alt-strum even at the same
+    // spacing. Zero disables the profile setting.
+    assert(sameDirectionStrumProtected(StrumDirection::Down, 20.000,
+                                       StrumDirection::Down, 20.025, 0.030));
+    assert(!sameDirectionStrumProtected(StrumDirection::Down, 20.000,
+                                        StrumDirection::Up, 20.025, 0.030));
+    assert(!sameDirectionStrumProtected(StrumDirection::Down, 20.000,
+                                        StrumDirection::Down, 20.031, 0.030));
+    assert(!sameDirectionStrumProtected(StrumDirection::Down, 20.000,
+                                        StrumDirection::Down, 20.001, 0.0));
+
+    // Sustain-drop leniency is likewise a profile parameter rather than a
+    // guessed universal CH constant.
+    assert(sustainDropIsForgiven(30.000, 30.040, 0.050));
+    assert(!sustainDropIsForgiven(30.000, 30.051, 0.050));
+    assert(!sustainDropIsForgiven(30.000, 30.001, 0.0));
 
     // Poll timestamp mapping removes render-frame delay.
     assert(near(eventSongTime(10.000, 0.006), 9.994));

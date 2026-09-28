@@ -1,8 +1,10 @@
-# Alpha.17 release validation workflow
+# Alpha.18 release validation workflow
 name: Build and Release Alpha
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -35,50 +37,58 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.17-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.18-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.17-win64
+          name: GitarGame-v0.1.0-alpha.18-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.17-win64.zip
+            dist/GitarGame-v0.1.0-alpha.18-win64.zip
 
       - name: Publish alpha release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.17
-          name: GitarGame v0.1.0-alpha.17
+          tag_name: v0.1.0-alpha.18
+          name: GitarGame v0.1.0-alpha.18
           prerelease: true
           make_latest: false
           body: |
-            Gameplay-feel and calibration-persistence refinement on top of alpha.16.
+            Clone Hero behavioral-compatibility engine pass on top of alpha.17.
 
-            Hit-window / Clone Hero feel:
-            - Keeps alpha.16's high-resolution XInput timestamping and low-latency judgment path
-            - Relaxes the untouched alpha.16 default from +/-70 ms to +/-90 ms (~180 ms total)
-            - Preserves custom hit-window values; only the alpha.16 default is migrated
-            - Adds normal Clone Hero-style early HOPO/tap frontend buffering
-            - Correct HOPO/tap fret transitions can be armed before the front edge and awarded when the window reaches them
-            - Frontend arms cancel if the player changes away from the required fret state
-            - HOPO frontend arms also cancel if combo is broken; taps remain combo-independent
+            Research-backed timing:
+            - Restores the documented Clone Hero core guitar window to +/-70 ms (140 ms total)
+            - Implements the separately documented 50 ms early-strum leniency instead of widening the core window
+            - Early strums are buffered and become eligible when the note reaches the normal frontend
+            - Buffered strums may briefly survive fret-order differences within the same physical gesture
 
-            Calibration persistence:
-            - Audio/input and video offsets continue to live in config.ini
-            - Windows additionally mirrors calibration to %LOCALAPPDATA%/GitarGame/calibration.ini
-            - The persistent profile is loaded after config.ini and survives executable replacement or portable-folder changes
-            - Existing config calibration is migrated into the persistent profile on first alpha.17 launch
-            - Auto calibration, Settings offset adjustments and F7/F8/F9 manual timing controls all update the persistent profile
-            - Adds release-gated calibration-profile serialization/round-trip tests
+            Clone Hero/GH3-style input state:
+            - Replaces alpha.17's single-note frontend arm with persistent infinite-frontend/tap readiness
+            - Any real fret transition primes HOPO/tap readiness; hitting a normal strum note also primes the next HOPO
+            - HOPO/tap hits consume readiness; misses/overstrums/reset clear it
+            - Current held fret state is still checked at hit time, so ghost inputs do not become automatic hits
+            - Normal ghost inputs are non-punitive, matching current Clone Hero behavior
 
-            Existing alpha.15 native picker hardening, alpha.14 visuals, alpha.13 previews/song completion,
-            alpha.12 calibration, MIDI/Opus compatibility and chart verification remain intact.
+            Strum/HOPO interaction:
+            - Adds a one-strum post-HOPO/tap eat window to reproduce Clone Hero's forgiving mixed strum/HOPO response
+            - Uses 80 ms as an explicitly approximate compatibility value derived from YARG's open-source GH/CH-style engine
+            - A second strum while an early-strum buffer is active overstrums, then becomes the new strum action
+
+            Fretting semantics:
+            - Single notes retain lower-fret anchoring
+            - Strum chords require exact chord frets
+            - HOPO/tap chords allow lower-fret anchoring beneath the lowest chord fret
+            - Pull-offs and open HOPO/tap releases remain supported
+
+            Existing alpha.17 persistent calibration, alpha.15 native picker hardening,
+            alpha.14 visuals, alpha.13 previews/song completion, MIDI/Opus compatibility and chart verification remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.17-win64.zip
+            dist/GitarGame-v0.1.0-alpha.18-win64.zip
