@@ -14,6 +14,34 @@ constexpr double kCloneHeroStrumLeniencyMs = 50.0;
 // descriptions closely enough to serve as our behavioral approximation.
 constexpr double kCloneHeroHopoStrumEatMs = 80.0;
 
+// These two values are profile settings in Clone Hero, not universal engine
+// constants. GitarGame keeps them parameterized so a CH profile can be copied
+// exactly instead of baking an unverifiable value into hit detection.
+constexpr double kDefaultDoubleStrumProtectionMs = 0.0;
+constexpr double kDefaultSustainDropLeniencyMs = 0.0;
+
+enum class StrumDirection : int8_t { None = 0, Up = -1, Down = 1 };
+
+inline bool sameDirectionStrumProtected(StrumDirection previousDirection,
+                                        double previousTimeSeconds,
+                                        StrumDirection direction,
+                                        double inputTimeSeconds,
+                                        double protectionSeconds) {
+    if (protectionSeconds <= 0.0 || previousDirection == StrumDirection::None ||
+        direction == StrumDirection::None || previousDirection != direction)
+        return false;
+    const double delta = inputTimeSeconds - previousTimeSeconds;
+    return delta >= 0.0 && delta <= protectionSeconds;
+}
+
+inline bool sustainDropIsForgiven(double releasedAtSeconds,
+                                  double reacquiredAtSeconds,
+                                  double leniencySeconds) {
+    if (leniencySeconds <= 0.0 || releasedAtSeconds < 0.0 ||
+        reacquiredAtSeconds < releasedAtSeconds) return false;
+    return reacquiredAtSeconds - releasedAtSeconds <= leniencySeconds;
+}
+
 inline bool heldMatches(uint8_t held, uint8_t target) {
     const int count = std::popcount(static_cast<unsigned int>(target));
     if (count > 1) return held == target;
