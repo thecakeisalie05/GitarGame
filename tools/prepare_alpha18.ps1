@@ -257,15 +257,19 @@ $text = $text.Replace('v0.1.0-alpha.17', 'v0.1.0-alpha.18')
 
 # Clone Hero exposes these as profile settings. Keep zero as the neutral default
 # until the player selects the same values used by their CH profile.
+# Settings is declared in generated main.cpp (inside namespace legacy from
+# main_v3.cpp), so patch the legacy generated file rather than the wrapper.
+$legacySettingsText = [System.IO.File]::ReadAllText($legacyPath)
 $settingsPattern = '(?m)^(\s*float hitWindowMs\s*=\s*[^;]+;)'
-if (-not [regex]::IsMatch($text, $settingsPattern)) { throw 'Could not locate Settings hit-window field for alpha.18 profile settings' }
-$text = [regex]::Replace(
-    $text, $settingsPattern,
+if (-not [regex]::IsMatch($legacySettingsText, $settingsPattern)) { throw 'Could not locate Settings hit-window field for alpha.18 profile settings' }
+$legacySettingsText = [regex]::Replace(
+    $legacySettingsText, $settingsPattern,
     '$1' + $nl +
     '    float doubleStrumProtectionMs = 0.0f;' + $nl +
     '    float sustainDropLeniencyMs = 0.0f;',
     1
 )
+[System.IO.File]::WriteAllText($legacyPath, $legacySettingsText)
 $text = $text.Replace(
     'else if (key == "hit_window_ms") s.hitWindowMs = clampFloat(std::stof(value), 20.0f, 250.0f);',
     'else if (key == "hit_window_ms") s.hitWindowMs = clampFloat(std::stof(value), 20.0f, 250.0f);' + $nl +
