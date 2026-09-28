@@ -257,15 +257,15 @@ $text = $text.Replace('v0.1.0-alpha.17', 'v0.1.0-alpha.18')
 
 # Clone Hero exposes these as profile settings. Keep zero as the neutral default
 # until the player selects the same values used by their CH profile.
-$settingsNeedle = '    float hitWindowMs = 70.0f;'
-if (-not $text.Contains($settingsNeedle)) {
-    $settingsNeedle = '    float hitWindowMs = 90.0f;'
-}
-if (-not $text.Contains($settingsNeedle)) { throw 'Could not locate Settings hit-window field for alpha.18 profile settings' }
-$text = $text.Replace($settingsNeedle,
-                      $settingsNeedle + $nl +
-                      '    float doubleStrumProtectionMs = 0.0f;' + $nl +
-                      '    float sustainDropLeniencyMs = 0.0f;')
+$settingsPattern = '(?m)^(\s*float hitWindowMs\s*=\s*[^;]+;)'
+if (-not [regex]::IsMatch($text, $settingsPattern)) { throw 'Could not locate Settings hit-window field for alpha.18 profile settings' }
+$text = [regex]::Replace(
+    $text, $settingsPattern,
+    '$1' + $nl +
+    '    float doubleStrumProtectionMs = 0.0f;' + $nl +
+    '    float sustainDropLeniencyMs = 0.0f;',
+    1
+)
 $text = $text.Replace(
     'else if (key == "hit_window_ms") s.hitWindowMs = clampFloat(std::stof(value), 20.0f, 250.0f);',
     'else if (key == "hit_window_ms") s.hitWindowMs = clampFloat(std::stof(value), 20.0f, 250.0f);' + $nl +
