@@ -15,11 +15,13 @@
 #include <clocale>
 #include <ctime>
 #include <fstream>
+#include <future>
 #include <iomanip>
 #include <iterator>
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 inline std::string upper(std::string s) {
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
