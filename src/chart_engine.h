@@ -188,7 +188,9 @@ inline int noteIdentity(const Note& note) {
     return static_cast<int>(note.mask);
 }
 
-inline void rebuildTiming(ChartData& chart, std::optional<int64_t> hopoThresholdOverride = std::nullopt) {
+inline void rebuildTiming(ChartData& chart,
+                          std::optional<int64_t> hopoThresholdOverride = std::nullopt,
+                          bool eighthNoteHopo = false) {
     normalizeTempoMap(chart);
     for (auto& tempo : chart.tempos) tempo.time = ticksToSecondsAtResolution(tempo.tick, chart.resolution, chart.tempos);
     for (auto& signature : chart.timeSignatures) signature.time = ticksToSecondsAtResolution(signature.tick, chart.resolution, chart.tempos);
@@ -219,8 +221,10 @@ inline void rebuildTiming(ChartData& chart, std::optional<int64_t> hopoThreshold
     }
 
     const int64_t defaultHopoThreshold = std::max<int64_t>(1, static_cast<int64_t>(std::floor((65.0 / 192.0) * chart.resolution)));
+    const int64_t eighthNoteThreshold = std::max<int64_t>(1, chart.resolution / 2);
     const int64_t hopoThreshold = hopoThresholdOverride && *hopoThresholdOverride > 0
-        ? *hopoThresholdOverride : defaultHopoThreshold;
+        ? *hopoThresholdOverride
+        : (eighthNoteHopo ? eighthNoteThreshold : defaultHopoThreshold);
     for (auto& note : chart.notes) note.hopo = note.tap;
     for (size_t i = 1; i < chart.notes.size(); ++i) {
         auto& note = chart.notes[i];
@@ -273,7 +277,8 @@ inline double tickToSeconds(int64_t tick, int resolution, const std::vector<Temp
 }
 
 inline std::optional<ChartData> parseChart(const std::filesystem::path& file, std::string& error,
-                                           std::optional<int64_t> hopoThresholdOverride = std::nullopt) {
+                                           std::optional<int64_t> hopoThresholdOverride = std::nullopt,
+                                           bool eighthNoteHopo = false) {
     std::ifstream in(file, std::ios::binary);
     if (!in) { error = "Could not open notes.chart"; return std::nullopt; }
 
@@ -426,7 +431,7 @@ inline std::optional<ChartData> parseChart(const std::filesystem::path& file, st
 
     std::sort(chart.notes.begin(), chart.notes.end(), [](const Note& a, const Note& b) { return a.tick < b.tick; });
     std::sort(chart.starPowerPhrases.begin(), chart.starPowerPhrases.end(), [](const auto& a, const auto& b) { return a.tick < b.tick; });
-    chartcompat::rebuildTiming(chart, hopoThresholdOverride);
+    chartcompat::rebuildTiming(chart, hopoThresholdOverride, eighthNoteHopo);
 
     if (chart.notes.empty()) { error = "Selected guitar track contains no playable notes"; return std::nullopt; }
 
