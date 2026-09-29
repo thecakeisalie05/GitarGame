@@ -1,4 +1,4 @@
-# Alpha.24 release validation workflow
+# Alpha.25 release validation workflow
 name: Build and Release Alpha
 
 on:
@@ -37,46 +37,41 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.24-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.25-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.24-win64
+          name: GitarGame-v0.1.0-alpha.25-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.24-win64.zip
+            dist/GitarGame-v0.1.0-alpha.25-win64.zip
 
       - name: Publish alpha release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.24
-          name: GitarGame v0.1.0-alpha.24
+          tag_name: v0.1.0-alpha.25
+          name: GitarGame v0.1.0-alpha.25
           prerelease: true
           make_latest: false
           body: |
-            Audio-feedback and hit-FX polish on top of alpha.23.
+            Whammy synchronization and instrument-mute correction on top of alpha.24.
 
-            Visual feedback:
-            - Replaces the layered grey-ish hit haze with a shorter, cleaner white flash
-            - Keeps the expanding impact concept while reducing visual clutter
+            - Removes raylib SetMusicPitch from gameplay whammy because it changes playback rate
+            - Adds a time-preserving stream DSP pitch-bend effect on the playable instrument stem
+            - Keeps the music clock at 1x speed so whammy no longer drifts out of sync
+            - Expands guitar/rhythm stem detection to common real-world filename variants
+            - Mutes every recognized guitar/rhythm stem to 0 on a miss
+            - Restores instrument stems to the normal 0.58 gameplay mix level on the next successful note
+            - Keeps the procedural miss thunk and alpha.24 white hit-flash polish
 
-            Instrument audio feedback:
-            - Adds whammy pitch bending on isolated guitar/rhythm stems
-            - Adds mute-on-miss for isolated guitar/rhythm stems
-            - Successful notes restore the instrument immediately
-            - Adds a short procedural miss thunk for clear feedback on every song format
-            - Mixed single-track songs are intentionally left untouched
-            - Opus packages with isolated guitar/rhythm stems are preserved as separate streams so the effects can work
-            - Whammy pitch is restored to 1.0 and the instrument stem is re-synced to the master clock when the bar returns to rest
-
-            Alpha.23 legacy HOPO compatibility and all prior gameplay fixes remain intact.
+            Alpha.23 HOPO compatibility and all prior gameplay/UI improvements remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.24-win64.zip
+            dist/GitarGame-v0.1.0-alpha.25-win64.zip
