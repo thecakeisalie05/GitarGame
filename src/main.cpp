@@ -269,6 +269,7 @@ struct SongInfo {
     std::string artist;
     float delayMs = 0.0f;
     std::optional<int64_t> hopoThresholdTicks;
+    bool eighthNoteHopo = false;
 };
 
 static SongInfo readSongInfo(const fs::path& dir) {
@@ -285,11 +286,15 @@ static SongInfo readSongInfo(const fs::path& dir) {
         if (key == "name" && !value.empty()) song.name = value;
         else if (key == "artist") song.artist = value;
         else if (key == "delay") { try { song.delayMs = std::stof(value); } catch (...) {} }
-        else if (key == "hopo_threshold") {
+        else if (key == "hopo_threshold" || key == "hopo_frequency" || key == "hopofreq") {
             try {
                 const long long parsed = std::stoll(value);
                 if (parsed > 0) song.hopoThresholdTicks = static_cast<int64_t>(parsed);
             } catch (...) {}
+        } else if (key == "eighthnote_hopo") {
+            const std::string normalized = lower(trim(value));
+            song.eighthNoteHopo =
+                normalized == "1" || normalized == "true" || normalized == "yes" || normalized == "on";
         }
     }
     return song;
