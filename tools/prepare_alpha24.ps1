@@ -101,13 +101,23 @@ if(-not $legacy.Contains($sessionNeedle)){throw 'Could not locate Session feedba
 $legacy=$legacy.Replace($sessionNeedle,$sessionNew.TrimEnd())
 
 $resetNeedle='s.lastJudgmentOverstrum = false;'
-$legacy=$legacy.Replace($resetNeedle,$resetNeedle+' s.instrumentMutedV24 = false; s.whammyPitchActiveV24 = false;',1)
+$legacy=[regex]::Replace($legacy,[regex]::Escape($resetNeedle),$resetNeedle+' s.instrumentMutedV24 = false; s.whammyPitchActiveV24 = false;',1)
 
-# Miss starts instrument mute.
-$missNeedle='            s.combo = 0;'
-$missNew='            s.combo = 0;'+$nl+'            s.instrumentMutedV24 = true;'
-if(-not $legacy.Contains($missNeedle)){throw 'Could not locate miss state'}
-$legacy=$legacy.Replace($missNeedle,$missNew,1)
+# Miss starts instrument mute. Anchor to alpha.18's miss-state reset so
+# overstrums and playback resets do not trigger mute-on-miss.
+$missNeedle=@'
+            s.combo = 0;
+            s.chTapReady = false;
+            s.pendingStrum = false;
+'@
+$missNew=@'
+            s.combo = 0;
+            s.instrumentMutedV24 = true;
+            s.chTapReady = false;
+            s.pendingStrum = false;
+'@
+if(-not $legacy.Contains($missNeedle)){throw 'Could not locate actual miss-state block'}
+$legacy=$legacy.Replace($missNeedle,$missNew.TrimEnd())
 
 # A successful hit restores instrument volume.
 $markNeedle='    s.lastJudgmentOverstrum = false;'
@@ -117,26 +127,29 @@ if($markIndex -lt 0){throw 'markHit not found'}
 $before=$legacy.Substring(0,$markIndex)
 $after=$legacy.Substring($markIndex)
 if(-not $after.Contains($markNeedle)){throw 'markHit judgment anchor missing'}
-$after=$after.Replace($markNeedle,$markNew,1)
+$after=[regex]::Replace($after,[regex]::Escape($markNeedle),$markNew,1)
 $legacy=$before+$after
 
 # Runtime audio FX helper.
 $insertBefore='static void unloadStems'
 $helper=@'
-static void updateInstrumentAudioFxV24(Session& s, float whammyAmount) {
-    if (s.stems.empty()) return;
-    const float masterTime = GetMusicTimePlayed(s.stems.front().music);
+static void updateInstrumentAudioFxV24(std::vector<Stem>& stems,
+                                       bool instrumentMuted,
+                                       bool& whammyPitchActive,
+                                       float whammyAmount) {
+    if (stems.empty()) return;
+    const float masterTime = GetMusicTimePlayed(stems.front().music);
     const float pitch = 1.0f - 0.095f * std::clamp(whammyAmount, 0.0f, 1.0f);
     const bool bending = whammyAmount > 0.03f;
 
-    for (auto& stem : s.stems) {
+    for (auto& stem : stems) {
         if (!playableInstrumentStemV24(stem.path)) continue;
-        SetMusicVolume(stem.music, s.instrumentMutedV24 ? 0.0f : 1.0f);
+        SetMusicVolume(stem.music, instrumentMuted ? 0.0f : 1.0f);
         SetMusicPitch(stem.music, bending ? pitch : 1.0f);
-        if (!bending && s.whammyPitchActiveV24 && masterTime >= 0.0f)
+        if (!bending && whammyPitchActive && masterTime >= 0.0f)
             SeekMusicStream(stem.music, masterTime);
     }
-    s.whammyPitchActiveV24 = bending;
+    whammyPitchActive = bending;
 }
 
 '@
@@ -179,7 +192,7 @@ $text=$text.Replace($flashOld,$flashNew.TrimEnd())
 
 # After gameplay state/whammy computation, apply pitch/mute.
 $whammyMarker='                    if (whammyInputV20 > 0.03f && !session.starPowerActive) {'
-$fxCall='                    updateInstrumentAudioFxV24(session, whammyInputV20);'+$nl+$whammyMarker
+$fxCall='                    updateInstrumentAudioFxV24(session.stems, session.instrumentMutedV24, session.whammyPitchActiveV24, whammyInputV20);'+$nl+$whammyMarker
 if(-not $text.Contains($whammyMarker)){throw 'Could not locate whammy gameplay block'}
 $text=$text.Replace($whammyMarker,$fxCall,1)
 
