@@ -190,11 +190,64 @@ $flashNew=@'
 if(-not $text.Contains($flashOld)){throw 'Could not locate alpha.21 flash block'}
 $text=$text.Replace($flashOld,$flashNew.TrimEnd())
 
+# Procedural miss sound: a short low thunk with a little deterministic grit.
+# Keep this separate from instrument muting so every song format gets feedback.
+$missSoundInsertMarker = 'struct UiNav {'
+$missSoundCode = @'
+static Sound makeMissSoundV24() {
+    const int sampleRate = 44100;
+    const float duration = 0.085f;
+    const int frameCount = std::max(1, static_cast<int>(duration * sampleRate));
+    std::vector<short> samples(static_cast<size_t>(frameCount));
+    uint32_t noiseState = 0x6d2b79f5U;
+    for (int i = 0; i < frameCount; ++i) {
+        const float t = static_cast<float>(i) / sampleRate;
+        const float env = std::pow(std::max(0.0f, 1.0f - t / duration), 3.0f);
+        const float tone = std::sin(2.0f * PI * (145.0f - 65.0f * (t / duration)) * t);
+        noiseState = noiseState * 1664525U + 1013904223U;
+        const float grit = (static_cast<float>((noiseState >> 9) & 0x7fffU) / 16383.5f) - 1.0f;
+        const float sample = std::clamp((tone * 0.72f + grit * 0.28f) * env * 0.34f, -1.0f, 1.0f);
+        samples[static_cast<size_t>(i)] = static_cast<short>(sample * 32767.0f);
+    }
+    Wave wave{};
+    wave.frameCount = static_cast<unsigned int>(frameCount);
+    wave.sampleRate = sampleRate;
+    wave.sampleSize = 16;
+    wave.channels = 1;
+    wave.data = samples.data();
+    return LoadSoundFromWave(wave);
+}
+
+'@
+if(-not $text.Contains($missSoundInsertMarker)){throw 'Could not locate UI sound insertion marker for miss sound'}
+$text=$text.Replace($missSoundInsertMarker,$missSoundCode+$missSoundInsertMarker,1)
+
+$audioRuntimeOld='UiSoundsV19 uiSoundsV19; uiSoundsV19.init(); AsyncAudioPrepV19 audioPrepV19; int pendingSongV19 = -1;'
+$audioRuntimeNew=@'
+UiSoundsV19 uiSoundsV19; uiSoundsV19.init();
+    Sound missSoundV24{}; bool missSoundReadyV24 = false;
+    if (IsAudioDeviceReady()) { missSoundV24 = makeMissSoundV24(); missSoundReadyV24 = missSoundV24.frameCount > 0; }
+    int observedMissesV24 = 0;
+    AsyncAudioPrepV19 audioPrepV19; int pendingSongV19 = -1;
+'@
+if(-not $text.Contains($audioRuntimeOld)){throw 'Could not locate alpha.19 audio runtime state for miss sound'}
+$text=$text.Replace($audioRuntimeOld,$audioRuntimeNew.TrimEnd(),1)
+
 # After gameplay state/whammy computation, apply pitch/mute.
 $whammyMarker='                    if (whammyInputV20 > 0.03f && !session.starPowerActive) {'
-$fxCall='                    updateInstrumentAudioFxV24(session.stems, session.instrumentMutedV24, session.whammyPitchActiveV24, whammyInputV20);'+$nl+$whammyMarker
+$fxCall='                    updateInstrumentAudioFxV24(session.stems, session.instrumentMutedV24, session.whammyPitchActiveV24, whammyInputV20);
+                    if (session.misses < observedMissesV24) observedMissesV24 = session.misses;
+                    if (session.misses > observedMissesV24) {
+                        if (missSoundReadyV24) { StopSound(missSoundV24); PlaySound(missSoundV24); }
+                        observedMissesV24 = session.misses;
+                    }'+$nl+$whammyMarker
 if(-not $text.Contains($whammyMarker)){throw 'Could not locate whammy gameplay block'}
 $text=$text.Replace($whammyMarker,$fxCall,1)
 
+$shutdownOldV24='pendingSongV19 = -1; audioPrepV19.finish(); songPreview.clearRequest(); artwork.clear(); unloadStems(session.stems); uiSoundsV19.unload(); if (calibrationClickReady) UnloadSound(calibrationClick); CloseAudioDevice(); CloseWindow(); return 0;'
+$shutdownNewV24='pendingSongV19 = -1; audioPrepV19.finish(); songPreview.clearRequest(); artwork.clear(); unloadStems(session.stems); uiSoundsV19.unload(); if (missSoundReadyV24) UnloadSound(missSoundV24); if (calibrationClickReady) UnloadSound(calibrationClick); CloseAudioDevice(); CloseWindow(); return 0;'
+if(-not $text.Contains($shutdownOldV24)){throw 'Could not locate shutdown cleanup for alpha.24 miss sound'}
+$text=$text.Replace($shutdownOldV24,$shutdownNewV24)
+
 [IO.File]::WriteAllText($OutputPath,$text,[Text.UTF8Encoding]::new($false))
-Write-Host "Prepared alpha.24 cleaner white hit flashes, whammy pitch bend, and mute-on-miss: $OutputPath"
+Write-Host "Prepared alpha.24 cleaner white hit flashes, whammy pitch bend, mute-on-miss, and miss sounds: $OutputPath"
