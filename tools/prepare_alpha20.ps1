@@ -169,7 +169,52 @@ $text = $text.Replace('v0.1.0-alpha.19', 'v0.1.0-alpha.20')
 
 # Gold Star Power phrase gems + much stronger HOPO glow. Patch the alpha.14
 # lane-note renderer after all earlier visual passes have been applied.
-$lanePattern = '(?ms)        for \(int lane = 0; lane < 5; \+\+lane\) if \(n\.mask & \(1 << lane\)\) \{.*?^        \}\r?\n'
+$laneOld = @'
+        for (int lane = 0; lane < 5; ++lane) if (n.mask & (1 << lane)) {
+            Color c = cfg.lanes[lane];
+            float radius = laneWidth * 0.31f * ui.noteScale;
+            float missAlpha = 1.0f;
+            float redMix = 0.0f;
+            if (n.missed) {
+                const double missAge = std::max(0.0, now - n.judgedAt);
+                redMix = static_cast<float>(ggfeedback::missRedBlend(missAge));
+                radius *= static_cast<float>(ggfeedback::missScale(missAge));
+                missAlpha = static_cast<float>(ggfeedback::missAlpha(missAge));
+                c = mixColor(c, missColor, redMix);
+                c.a = static_cast<unsigned char>(235.0f * missAlpha);
+            } else if (n.hit) {
+                c.a = 70;
+            }
+
+            if (n.tap) {
+                Color tapOuter = n.missed ? mixColor(RAYWHITE, missColor, redMix * 0.82f)
+                                          : Color{235, 248, 255, 255};
+                tapOuter.a = n.missed ? static_cast<unsigned char>(225.0f * missAlpha)
+                                      : static_cast<unsigned char>(n.hit ? 75 : 255);
+                drawDisc3DV5({laneX(lane), 0.075f, z}, radius * 0.92f, 0.105f, 14, tapOuter);
+                drawDisc3DV5({laneX(lane), 0.190f, z}, radius * 0.47f, 0.028f, 14, c);
+                DrawCylinderWires({laneX(lane), 0.195f, z}, radius * 0.50f, radius * 0.50f, 0.032f, 14,
+                                  n.missed ? alphaColor(missColor, static_cast<unsigned char>(205.0f * missAlpha))
+                                           : alphaColor(RAYWHITE, n.hit ? 65 : 235));
+            } else if (n.hopo) {
+                Color rim = n.missed ? mixColor(Color{225, 235, 245, 255}, missColor, redMix * 0.86f)
+                                     : Color{225, 235, 245, 255};
+                rim.a = n.missed ? static_cast<unsigned char>(220.0f * missAlpha)
+                                 : static_cast<unsigned char>(n.hit ? 65 : 245);
+                drawDisc3DV5({laneX(lane), 0.072f, z}, radius * 0.86f, 0.095f, 14, rim);
+                drawDisc3DV5({laneX(lane), 0.178f, z}, radius * 0.55f, 0.035f, 14, c);
+                DrawCylinderWires({laneX(lane), 0.181f, z}, radius * 0.58f, radius * 0.58f, 0.040f, 14,
+                                  n.missed ? alphaColor(missColor, static_cast<unsigned char>(195.0f * missAlpha))
+                                           : alphaColor(RAYWHITE, n.hit ? 55 : 215));
+            } else {
+                drawDisc3DV5({laneX(lane), 0.07f, z}, radius, 0.115f, 12, c);
+                Color shine = n.missed ? mixColor(alphaColor(RAYWHITE, 65), missColor, redMix)
+                                       : alphaColor(RAYWHITE, n.hit ? 20 : 65);
+                if (n.missed) shine.a = static_cast<unsigned char>(100.0f * missAlpha);
+                drawDisc3DV5({laneX(lane), 0.188f, z}, radius * 0.18f, 0.018f, 10, shine);
+            }
+        }
+'@
 $laneReplacement = @'
         for (int lane = 0; lane < 5; ++lane) if (n.mask & (1 << lane)) {
             const bool starNoteV20 = n.starPhrase >= 0;
@@ -233,9 +278,8 @@ $laneReplacement = @'
             }
         }
 '@
-$updated = [regex]::Replace($text, $lanePattern, $laneReplacement, 1)
-if ($updated -eq $text) { throw 'Could not replace lane-note renderer for alpha.20 glow/SP visuals' }
-$text = $updated
+if (-not $text.Contains($laneOld)) { throw 'Could not locate exact alpha.14 lane-note renderer for alpha.20 glow/SP visuals' }
+$text = $text.Replace($laneOld, $laneReplacement.TrimEnd())
 
 # Open notes in SP phrases become gold bars.
 $openMarker = '        if (n.open) {'
