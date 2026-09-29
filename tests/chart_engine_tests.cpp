@@ -200,7 +200,33 @@ int main() {
 
         auto tighter = parseChart(path, error, int64_t{64});
         assert(tighter);
-        assert(!tighter->notes[1].hopo); // song.ini hopo_threshold-style override wins.
+        assert(!tighter->notes[1].hopo); // explicit song.ini threshold wins.
+
+        const auto eighthPath = writeFixture("eighthnote-hopo.chart", R"([Song]
+{
+  Resolution = 192
+}
+[SyncTrack]
+{
+  0 = B 120000
+}
+[ExpertSingle]
+{
+  0 = N 0 0
+  96 = N 1 0
+}
+)");
+        auto normalEighthFixture = parseChart(eighthPath, error);
+        assert(normalEighthFixture);
+        assert(!normalEighthFixture->notes[1].hopo);
+
+        auto rb2EighthFixture = parseChart(eighthPath, error, std::nullopt, true);
+        assert(rb2EighthFixture);
+        assert(rb2EighthFixture->notes[1].hopo); // eighthnote_hopo expands cutoff to resolution / 2.
+
+        auto explicitWins = parseChart(eighthPath, error, int64_t{64}, true);
+        assert(explicitWins);
+        assert(!explicitWins->notes[1].hopo); // hopo_frequency/hopofreq overrides eighthnote_hopo.
     }
 
     {

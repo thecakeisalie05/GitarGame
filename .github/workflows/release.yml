@@ -1,4 +1,4 @@
-# Alpha.22 release validation workflow
+# Alpha.23 release validation workflow
 name: Build and Release Alpha
 
 on:
@@ -37,40 +37,40 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.22-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.23-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.22-win64
+          name: GitarGame-v0.1.0-alpha.23-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.22-win64.zip
+            dist/GitarGame-v0.1.0-alpha.23-win64.zip
 
       - name: Publish alpha release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.22
-          name: GitarGame v0.1.0-alpha.22
+          tag_name: v0.1.0-alpha.23
+          name: GitarGame v0.1.0-alpha.23
           prerelease: true
           make_latest: false
           body: |
-            HOPO compatibility and dense-strumming fix on top of alpha.21.
+            Rock Band 2 / legacy HOPO metadata compatibility on top of alpha.22.
 
-            - Honors Clone Hero song.ini hopo_threshold overrides for both .chart and MIDI songs
-            - Keeps the standard 65/192 natural-HOPO threshold when no override is present
-            - Preserves explicit force-HOPO, force-strum, and tap markers
-            - Prevents post-HOPO strum-eat forgiveness from swallowing a strum that can legitimately hit the next note
-            - Adds regression coverage for default/overridden HOPO thresholds and ~75ms dense-stream strumming
+            - Adds song.ini hopo_frequency and hopofreq support as direct tick-threshold aliases
+            - Adds eighthnote_hopo support for legacy Rock Band/FoF-era conversions
+            - eighthnote_hopo expands the natural HOPO cutoff to one eighth-note step (resolution / 2)
+            - Explicit hopo_frequency/hopofreq values take precedence over eighthnote_hopo
+            - Applies the metadata consistently to both .chart and MIDI imports
+            - Adds regression tests matching the Bodhisattva-style 8th-note HOPO behavior
 
-            Alpha.21 library sorting, held scrolling, menu animation, hit flashes,
-            alpha.20 whammy/SP visuals, and earlier compatibility behavior remain intact.
+            Alpha.22 dense-stream strum handling and all previous gameplay/UI improvements remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.22-win64.zip
+            dist/GitarGame-v0.1.0-alpha.23-win64.zip
