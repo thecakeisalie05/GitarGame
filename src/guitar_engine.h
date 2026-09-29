@@ -168,7 +168,7 @@ inline bool hopoStrumShouldBeEaten(double hopoHitTimeSeconds,
     // redundant strum. It must never swallow a strum that can legitimately
     // hit the next note in a dense stream.
     if (nextNoteFrettingMatches &&
-        withinHitWindow(nextNoteTimeSeconds, strumTimeSeconds, halfWindowSeconds))
+        std::abs(nextNoteTimeSeconds - strumTimeSeconds) <= halfWindowSeconds)
         return false;
 
     return true;
