@@ -59,12 +59,13 @@ jobs:
           prerelease: true
           make_latest: false
           body: |
-            HOPO correctness and dense-strumming fix on top of alpha.21.
+            HOPO compatibility and dense-strumming fix on top of alpha.21.
 
-            - Fixes the legacy parser's 64-tick truncation by using the same 65/192 HOPO boundary as the compatibility parser
-            - Adds regression coverage for 65-tick HOPO / 66-tick strum classification
+            - Honors Clone Hero song.ini hopo_threshold overrides for both .chart and MIDI songs
+            - Keeps the standard 65/192 natural-HOPO threshold when no override is present
+            - Preserves explicit force-HOPO, force-strum, and tap markers
             - Prevents post-HOPO strum-eat forgiveness from swallowing a strum that can legitimately hit the next note
-            - Adds dense-stream regression coverage for ~75ms note spacing, matching sections such as TTFAF's fast HOPO passages
+            - Adds regression coverage for default/overridden HOPO thresholds and ~75ms dense-stream strumming
 
             Alpha.21 library sorting, held scrolling, menu animation, hit flashes,
             alpha.20 whammy/SP visuals, and earlier compatibility behavior remain intact.
