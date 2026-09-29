@@ -1,4 +1,4 @@
-# Alpha.20 release validation workflow
+# Alpha.21 release validation workflow
 name: Build and Release Alpha
 
 on:
@@ -37,54 +37,50 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.20-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.21-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.20-win64
+          name: GitarGame-v0.1.0-alpha.21-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.20-win64.zip
+            dist/GitarGame-v0.1.0-alpha.21-win64.zip
 
       - name: Publish alpha release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.20
-          name: GitarGame v0.1.0-alpha.20
+          tag_name: v0.1.0-alpha.21
+          name: GitarGame v0.1.0-alpha.21
           prerelease: true
           make_latest: false
           body: |
-            Compatibility and gameplay-feedback pass on top of alpha.19.
+            Library UX and visual-feedback pass on top of alpha.20.
 
-            Compatibility:
-            - Fixes the alpha.19 Opus-only regression caused by routing .opus detection through the native raylib extension filter
-            - Keeps persistent prepared-audio caching as an optimization only
-            - Restores the proven direct Opus decoder/mixer fallback whenever cache preparation is unavailable or invalid
+            Song library:
+            - Hold keyboard Up/Down or guitar strum to continuously browse
+            - Held scrolling accelerates over time for large libraries
+            - Left/Right or Yellow/Blue cycles sorting by Artist, Title, Album, Year, or Folder
+            - Re-sorting preserves the currently selected song
 
-            Note feedback:
-            - Adds a stronger hit-line flash and expanding receptor impact ring
-            - Preserves the existing shaped hit ghost for normal notes, HOPOs, taps, and opens
-            - Makes HOPOs visibly glow with a larger animated aura
+            Menus:
+            - Adds animated time-based color accents to selected menu entries
+            - Adds moving colored background streaks on the main menu
+            - Adds animated color treatment to the selected song row
 
-            Star Power phrases:
-            - Renders phrase notes in gold, including opens
-            - Keeps HOPO/tap silhouette differences while tinting the phrase treatment
+            Hit feedback:
+            - Adds a brief white-hot core flash and layered translucent lane-color halos on note hits
+            - Adds a full-width white flash for open-note hits
+            - Uses geometry-based glow for clarity/performance rather than requiring an HDR/post-process bloom pipeline
 
-            Whammy:
-            - Adds XInput analog whammy detection across common trigger/right-stick mappings
-            - Adds Space as a keyboard whammy fallback
-            - Provides visible sustain modulation while whammy is active
-            - Grants incremental Star Power while whammying an already-hit Star Power sustain
-
-            Alpha.19 async loading, persistent PCM cache, UI navigation sounds,
-            adjustable highway length, and all alpha.18 gameplay behavior remain intact.
+            Alpha.20 compatibility restoration, whammy, Star Power phrase visuals,
+            async loading, persistent audio cache, and Clone Hero-style gameplay behavior remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.20-win64.zip
+            dist/GitarGame-v0.1.0-alpha.21-win64.zip
