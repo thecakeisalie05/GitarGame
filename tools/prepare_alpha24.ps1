@@ -154,7 +154,7 @@ static void updateInstrumentAudioFxV24(std::vector<Stem>& stems,
 
 '@
 if(-not $legacy.Contains($insertBefore)){throw 'audio helper insertion anchor missing'}
-$legacy=$legacy.Replace($insertBefore,$helper+$insertBefore,1)
+$legacy=[regex]::Replace($legacy,[regex]::Escape($insertBefore),[System.Text.RegularExpressions.MatchEvaluator]{ param($m) $helper+$insertBefore },1)
 
 [IO.File]::WriteAllText($legacyPath,$legacy,[Text.UTF8Encoding]::new($false))
 
@@ -220,7 +220,7 @@ static Sound makeMissSoundV24() {
 
 '@
 if(-not $text.Contains($missSoundInsertMarker)){throw 'Could not locate UI sound insertion marker for miss sound'}
-$text=$text.Replace($missSoundInsertMarker,$missSoundCode+$missSoundInsertMarker,1)
+$text=[regex]::Replace($text,[regex]::Escape($missSoundInsertMarker),[System.Text.RegularExpressions.MatchEvaluator]{ param($m) $missSoundCode+$missSoundInsertMarker },1)
 
 $audioRuntimeOld='UiSoundsV19 uiSoundsV19; uiSoundsV19.init(); AsyncAudioPrepV19 audioPrepV19; int pendingSongV19 = -1;'
 $audioRuntimeNew=@'
@@ -231,7 +231,7 @@ UiSoundsV19 uiSoundsV19; uiSoundsV19.init();
     AsyncAudioPrepV19 audioPrepV19; int pendingSongV19 = -1;
 '@
 if(-not $text.Contains($audioRuntimeOld)){throw 'Could not locate alpha.19 audio runtime state for miss sound'}
-$text=$text.Replace($audioRuntimeOld,$audioRuntimeNew.TrimEnd(),1)
+$text=[regex]::Replace($text,[regex]::Escape($audioRuntimeOld),[System.Text.RegularExpressions.MatchEvaluator]{ param($m) $audioRuntimeNew.TrimEnd() },1)
 
 # After gameplay state/whammy computation, apply pitch/mute.
 $whammyMarker='                    if (whammyInputV20 > 0.03f && !session.starPowerActive) {'
@@ -242,7 +242,7 @@ $fxCall='                    updateInstrumentAudioFxV24(session.stems, session.i
                         observedMissesV24 = session.misses;
                     }'+$nl+$whammyMarker
 if(-not $text.Contains($whammyMarker)){throw 'Could not locate whammy gameplay block'}
-$text=$text.Replace($whammyMarker,$fxCall,1)
+$text=[regex]::Replace($text,[regex]::Escape($whammyMarker),[System.Text.RegularExpressions.MatchEvaluator]{ param($m) $fxCall },1)
 
 $shutdownOldV24='pendingSongV19 = -1; audioPrepV19.finish(); songPreview.clearRequest(); artwork.clear(); unloadStems(session.stems); uiSoundsV19.unload(); if (calibrationClickReady) UnloadSound(calibrationClick); CloseAudioDevice(); CloseWindow(); return 0;'
 $shutdownNewV24='pendingSongV19 = -1; audioPrepV19.finish(); songPreview.clearRequest(); artwork.clear(); unloadStems(session.stems); uiSoundsV19.unload(); if (missSoundReadyV24) UnloadSound(missSoundV24); if (calibrationClickReady) UnloadSound(calibrationClick); CloseAudioDevice(); CloseWindow(); return 0;'
