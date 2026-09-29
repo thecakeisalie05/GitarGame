@@ -78,7 +78,8 @@ inline int readSustainCutoffTicks(const std::filesystem::path& midiFile, int res
     return defaultCutoff;
 }
 
-inline std::optional<ChartData> parse(const std::filesystem::path& file, std::string& error) {
+inline std::optional<ChartData> parse(const std::filesystem::path& file, std::string& error,
+                                      std::optional<int64_t> hopoThresholdOverride = std::nullopt) {
     std::ifstream in(file, std::ios::binary);
     if (!in) { error = "Could not open notes.mid"; return std::nullopt; }
     Reader r;
@@ -251,7 +252,7 @@ inline std::optional<ChartData> parse(const std::filesystem::path& file, std::st
 
     std::sort(chart.notes.begin(), chart.notes.end(), [](const Note& a, const Note& b) { return a.tick < b.tick; });
     std::sort(chart.starPowerPhrases.begin(), chart.starPowerPhrases.end(), [](const auto& a, const auto& b) { return a.tick < b.tick; });
-    chartcompat::rebuildTiming(chart);
+    chartcompat::rebuildTiming(chart, hopoThresholdOverride);
 
     // MIDI has explicit force-HOPO and force-strum lanes rather than .chart's toggle flag.
     // Re-apply those semantics after natural-HOPO inference using tick membership so sorting is harmless.

@@ -155,6 +155,25 @@ inline bool hopoCanEatStrum(double hopoHitTimeSeconds, double strumTimeSeconds,
     return strumTimeSeconds - hopoHitTimeSeconds <= leniencySeconds;
 }
 
+inline bool hopoStrumShouldBeEaten(double hopoHitTimeSeconds,
+                                   double strumTimeSeconds,
+                                   double eatLeniencySeconds,
+                                   double nextNoteTimeSeconds,
+                                   double halfWindowSeconds,
+                                   bool nextNoteFrettingMatches) {
+    if (!hopoCanEatStrum(hopoHitTimeSeconds, strumTimeSeconds, eatLeniencySeconds))
+        return false;
+
+    // A post-HOPO strum-eat window is forgiveness for a near-simultaneous
+    // redundant strum. It must never swallow a strum that can legitimately
+    // hit the next note in a dense stream.
+    if (nextNoteFrettingMatches &&
+        std::abs(nextNoteTimeSeconds - strumTimeSeconds) <= halfWindowSeconds)
+        return false;
+
+    return true;
+}
+
 inline double eventSongTime(double frameSongTimeSeconds,
                             double eventAgeSeconds) {
     // XInput events are sampled on the polling thread before the render frame
