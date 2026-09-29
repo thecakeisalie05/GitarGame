@@ -64,6 +64,12 @@ int main() {
     assert(hopoCanEatStrum(10.000, 10.079, 0.080));
     assert(!hopoCanEatStrum(10.000, 10.081, 0.080));
 
+    // Dense-stream protection: a strum inside the post-HOPO forgiveness window
+    // must still hit the next valid note if that next note is already hittable.
+    assert(!hopoStrumShouldBeEaten(20.000, 20.075, 0.080, 20.075, 0.070, true));
+    assert(hopoStrumShouldBeEaten(20.000, 20.040, 0.080, 20.120, 0.070, true));
+    assert(hopoStrumShouldBeEaten(20.000, 20.040, 0.080, 20.040, 0.070, false));
+
     // Anchored HOPO/tap chords can be entered via a real fret transition.
     assert(canFretTransitionHit(true, false, false, 8, 0b00111, 0b00110, 0b00100, 0));
     assert(canFretTransitionHit(false, true, false, 0, 0b00111, 0b00110, 0b00100, 0));
