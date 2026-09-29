@@ -1,4 +1,4 @@
-# Alpha.19 release validation workflow
+# Alpha.20 release validation workflow
 name: Build and Release Alpha
 
 on:
@@ -37,51 +37,54 @@ jobs:
           Copy-Item README.md dist/README.md
           $zipItems = @('dist/GitarGame.exe','dist/config.example.ini','dist/README.md')
           if (Test-Path dist/GitarGame.pdb) { $zipItems += 'dist/GitarGame.pdb' }
-          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.19-win64.zip -Force
+          Compress-Archive -Path $zipItems -DestinationPath dist/GitarGame-v0.1.0-alpha.20-win64.zip -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GitarGame-v0.1.0-alpha.19-win64
+          name: GitarGame-v0.1.0-alpha.20-win64
           path: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
             dist/README.md
-            dist/GitarGame-v0.1.0-alpha.19-win64.zip
+            dist/GitarGame-v0.1.0-alpha.20-win64.zip
 
       - name: Publish alpha release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-alpha.19
-          name: GitarGame v0.1.0-alpha.19
+          tag_name: v0.1.0-alpha.20
+          name: GitarGame v0.1.0-alpha.20
           prerelease: true
           make_latest: false
           body: |
-            UI polish and responsive-loading pass on top of alpha.18.
+            Compatibility and gameplay-feedback pass on top of alpha.19.
 
-            Start screen and navigation:
-            - Removes the old title-screen tagline/marketing copy
-            - Adds subtle generated move, accept, and back navigation sounds with no external asset dependency
+            Compatibility:
+            - Fixes the alpha.19 Opus-only regression caused by routing .opus detection through the native raylib extension filter
+            - Keeps persistent prepared-audio caching as an optimization only
+            - Restores the proven direct Opus decoder/mixer fallback whenever cache preparation is unavailable or invalid
 
-            Highway:
-            - Expands highway-length adjustment to 30%-140%
-            - Uses finer 2.5% adjustment steps and persists the setting normally
+            Note feedback:
+            - Adds a stronger hit-line flash and expanding receptor impact ring
+            - Preserves the existing shaped hit ghost for normal notes, HOPOs, taps, and opens
+            - Makes HOPOs visibly glow with a larger animated aura
 
-            Audio loading:
-            - Moves expensive Opus preview decode and multi-stem mixing off the render/UI thread
-            - Keeps raylib Music creation on the main thread for safe audio-device ownership
-            - Prewarms the currently selected browser song after selection settles
-            - Shows a responsive Loading audio... state instead of freezing when Play is pressed before preparation finishes
-            - Persists prepared PCM WAVs under the local GitarGame cache so repeat loads and future launches avoid re-decoding
-            - Cache keys include source path, file size, and modification time so changed Opus files invalidate automatically
-            - Native OGG/MP3/WAV/FLAC packages continue using direct streaming
+            Star Power phrases:
+            - Renders phrase notes in gold, including opens
+            - Keeps HOPO/tap silhouette differences while tinting the phrase treatment
 
-            Alpha.18 Clone Hero gameplay compatibility, calibration persistence,
-            MIDI/Opus chart support, previews, visuals, and song-completion flow remain intact.
+            Whammy:
+            - Adds XInput analog whammy detection across common trigger/right-stick mappings
+            - Adds Space as a keyboard whammy fallback
+            - Provides visible sustain modulation while whammy is active
+            - Grants incremental Star Power while whammying an already-hit Star Power sustain
+
+            Alpha.19 async loading, persistent PCM cache, UI navigation sounds,
+            adjustable highway length, and all alpha.18 gameplay behavior remain intact.
           files: |
             dist/GitarGame.exe
             dist/GitarGame.pdb
             dist/config.example.ini
-            dist/GitarGame-v0.1.0-alpha.19-win64.zip
+            dist/GitarGame-v0.1.0-alpha.20-win64.zip
