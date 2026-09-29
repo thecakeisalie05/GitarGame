@@ -36,8 +36,8 @@ $cacheCode = @'
 struct PreparedOpusCacheV19 {
     bool fullAttempted = false;
     bool previewAttempted = false;
-    std::shared_ptr<std::vector<unsigned char>> fullWav;
-    std::shared_ptr<std::vector<unsigned char>> previewWav;
+    fs::path fullPath;
+    fs::path previewPath;
 };
 
 static std::mutex preparedOpusMutexV19;
@@ -47,6 +47,31 @@ static std::wstring audioCacheKeyV19(const fs::path& dir) {
     std::error_code ec;
     const auto absolute = fs::absolute(dir, ec);
     return (ec ? dir : absolute).lexically_normal().wstring();
+}
+
+static uint64_t fnv1aV19(uint64_t hash, const void* data, size_t size) {
+    const auto* bytes = static_cast<const unsigned char*>(data);
+    for (size_t i = 0; i < size; ++i) {
+        hash ^= static_cast<uint64_t>(bytes[i]);
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+static uint64_t hashTextV19(uint64_t hash, const std::wstring& text) {
+    return fnv1aV19(hash, text.data(), text.size() * sizeof(wchar_t));
+}
+
+static fs::path persistentAudioCacheRootV19() {
+#ifdef _WIN32
+    std::array<wchar_t, 32768> buffer{};
+    const DWORD count = GetEnvironmentVariableW(L"LOCALAPPDATA", buffer.data(),
+                                                 static_cast<DWORD>(buffer.size()));
+    if (count > 0 && count < buffer.size())
+        return fs::path(buffer.data()) / L"GitarGame" / L"cache" / L"audio";
+#endif
+    std::error_code ec;
+    return fs::temp_directory_path(ec) / "GitarGame" / "cache" / "audio";
 }
 
 static bool dedicatedPreviewOpusExistsV19(const fs::path& dir) {
@@ -71,8 +96,81 @@ static bool needsAnyOpusPreparationV19(const fs::path& dir) {
     return dedicatedPreviewOpusExistsV19(dir) || needsFullOpusPreparationV19(dir);
 }
 
+static fs::path cacheFileForOpusV19(const fs::path& dir, bool previewOnly) {
+    uint64_t hash = 1469598103934665603ULL;
+    hash = hashTextV19(hash, audioCacheKeyV19(dir));
+    const wchar_t kind = previewOnly ? L'P' : L'F';
+    hash = fnv1aV19(hash, &kind, sizeof(kind));
+
+    std::vector<fs::path> files;
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator(dir, ec)) {
+        if (!entry.is_regular_file(ec)) { ec.clear(); continue; }
+        const fs::path path = entry.path();
+        if (lower(path.extension().string()) != ".opus") continue;
+        const bool isPreview = lower(path.stem().string()) == "preview";
+        if (previewOnly != isPreview) continue;
+        files.push_back(path);
+    }
+    std::sort(files.begin(), files.end());
+
+    for (const auto& path : files) {
+        const std::wstring name = path.filename().wstring();
+        hash = hashTextV19(hash, name);
+
+        const auto size = fs::file_size(path, ec);
+        if (!ec) hash = fnv1aV19(hash, &size, sizeof(size));
+        ec.clear();
+
+        const auto stamp = fs::last_write_time(path, ec);
+        if (!ec) {
+            const auto ticks = stamp.time_since_epoch().count();
+            hash = fnv1aV19(hash, &ticks, sizeof(ticks));
+        }
+        ec.clear();
+    }
+
+    std::wostringstream fileName;
+    fileName << std::hex << std::setw(16) << std::setfill(L'0') << hash
+             << (previewOnly ? L"-preview.wav" : L"-full.wav");
+    return persistentAudioCacheRootV19() / fileName.str();
+}
+
+static bool usableCachedWavV19(const fs::path& path) {
+    std::error_code ec;
+    return fs::is_regular_file(path, ec) && fs::file_size(path, ec) > 44;
+}
+
+static bool writeCachedWavV19(const fs::path& path, const std::vector<unsigned char>& bytes) {
+    if (bytes.size() <= 44) return false;
+    std::error_code ec;
+    fs::create_directories(path.parent_path(), ec);
+    if (ec) return false;
+
+    fs::path temp = path;
+    temp += L".tmp";
+    {
+        std::ofstream out(temp, std::ios::binary | std::ios::trunc);
+        if (!out) return false;
+        out.write(reinterpret_cast<const char*>(bytes.data()),
+                  static_cast<std::streamsize>(bytes.size()));
+        out.flush();
+        if (!out) return false;
+    }
+    fs::remove(path, ec);
+    ec.clear();
+    fs::rename(temp, path, ec);
+    if (ec) {
+        fs::remove(temp, ec);
+        return false;
+    }
+    return true;
+}
+
 static bool fullOpusPreparationFinishedV19(const fs::path& dir) {
     if (!needsFullOpusPreparationV19(dir)) return true;
+    const fs::path disk = cacheFileForOpusV19(dir, false);
+    if (usableCachedWavV19(disk)) return true;
     std::lock_guard lock(preparedOpusMutexV19);
     const auto it = preparedOpusCacheV19.find(audioCacheKeyV19(dir));
     return it != preparedOpusCacheV19.end() && it->second.fullAttempted;
@@ -80,6 +178,8 @@ static bool fullOpusPreparationFinishedV19(const fs::path& dir) {
 
 static bool previewOpusPreparationFinishedV19(const fs::path& dir) {
     if (!dedicatedPreviewOpusExistsV19(dir)) return true;
+    const fs::path disk = cacheFileForOpusV19(dir, true);
+    if (usableCachedWavV19(disk)) return true;
     std::lock_guard lock(preparedOpusMutexV19);
     const auto it = preparedOpusCacheV19.find(audioCacheKeyV19(dir));
     return it != preparedOpusCacheV19.end() && it->second.previewAttempted;
@@ -89,50 +189,56 @@ static bool anyOpusPreparationFinishedV19(const fs::path& dir) {
     return fullOpusPreparationFinishedV19(dir) && previewOpusPreparationFinishedV19(dir);
 }
 
-static std::shared_ptr<std::vector<unsigned char>> preparedFullOpusV19(const fs::path& dir) {
+static fs::path preparedFullOpusPathV19(const fs::path& dir) {
+    const fs::path disk = cacheFileForOpusV19(dir, false);
+    if (usableCachedWavV19(disk)) return disk;
     std::lock_guard lock(preparedOpusMutexV19);
     const auto it = preparedOpusCacheV19.find(audioCacheKeyV19(dir));
-    return it == preparedOpusCacheV19.end() ? nullptr : it->second.fullWav;
+    return it == preparedOpusCacheV19.end() ? fs::path{} : it->second.fullPath;
 }
 
-static std::shared_ptr<std::vector<unsigned char>> preparedPreviewOpusV19(const fs::path& dir) {
+static fs::path preparedPreviewOpusPathV19(const fs::path& dir) {
+    const fs::path disk = cacheFileForOpusV19(dir, true);
+    if (usableCachedWavV19(disk)) return disk;
     std::lock_guard lock(preparedOpusMutexV19);
     const auto it = preparedOpusCacheV19.find(audioCacheKeyV19(dir));
-    return it == preparedOpusCacheV19.end() ? nullptr : it->second.previewWav;
+    return it == preparedOpusCacheV19.end() ? fs::path{} : it->second.previewPath;
 }
 
 static void prepareOpusCachesV19(const fs::path& dir) {
     const std::wstring key = audioCacheKeyV19(dir);
 
     if (dedicatedPreviewOpusExistsV19(dir) && !previewOpusPreparationFinishedV19(dir)) {
+        const fs::path cachePath = cacheFileForOpusV19(dir, true);
         std::string error;
         auto decoded = opusmix::decodeFile(dir / "preview.opus", error);
-        std::shared_ptr<std::vector<unsigned char>> bytes;
-        if (decoded) bytes = std::make_shared<std::vector<unsigned char>>(std::move(decoded->wavBytes));
+        const bool saved = decoded && writeCachedWavV19(cachePath, decoded->wavBytes);
         {
             std::lock_guard lock(preparedOpusMutexV19);
             auto& cache = preparedOpusCacheV19[key];
             cache.previewAttempted = true;
-            cache.previewWav = std::move(bytes);
+            if (saved) cache.previewPath = cachePath;
         }
 #ifdef _WIN32
-        if (!decoded && !error.empty()) ggdiag::log("Async preview Opus decode failed: " + error);
+        if (saved) ggdiag::log("Cached preview Opus PCM: " + cachePath.string());
+        else if (!decoded && !error.empty()) ggdiag::log("Async preview Opus decode failed: " + error);
 #endif
     }
 
     if (needsFullOpusPreparationV19(dir) && !fullOpusPreparationFinishedV19(dir)) {
+        const fs::path cachePath = cacheFileForOpusV19(dir, false);
         std::string error;
         auto mixed = opusmix::mixDirectory(dir, error);
-        std::shared_ptr<std::vector<unsigned char>> bytes;
-        if (mixed) bytes = std::make_shared<std::vector<unsigned char>>(std::move(mixed->wavBytes));
+        const bool saved = mixed && writeCachedWavV19(cachePath, mixed->wavBytes);
         {
             std::lock_guard lock(preparedOpusMutexV19);
             auto& cache = preparedOpusCacheV19[key];
             cache.fullAttempted = true;
-            cache.fullWav = std::move(bytes);
+            if (saved) cache.fullPath = cachePath;
         }
 #ifdef _WIN32
-        if (!mixed && !error.empty() && error != "No .opus stems found")
+        if (saved) ggdiag::log("Cached mixed Opus PCM: " + cachePath.string());
+        else if (!mixed && !error.empty() && error != "No .opus stems found")
             ggdiag::log("Async song Opus mix failed: " + error);
 #endif
     }
@@ -166,21 +272,22 @@ static std::vector<Stem> loadStems(const fs::path& dir) {
     }
     if (!stems.empty() || !hasOpus) return stems;
 
-    auto backing = preparedFullOpusV19(dir);
-    if (!backing && !fullOpusPreparationFinishedV19(dir)) {
+    fs::path preparedPath = preparedFullOpusPathV19(dir);
+    if (preparedPath.empty() && !fullOpusPreparationFinishedV19(dir)) {
         // Direct command-line launches and unusual entry points can still reach
         // loadSong without browser prewarming. Keep compatibility by preparing
         // synchronously only in that fallback path.
         prepareOpusCachesV19(dir);
-        backing = preparedFullOpusV19(dir);
+        preparedPath = preparedFullOpusPathV19(dir);
     }
-    if (!backing || backing->size() > static_cast<size_t>(std::numeric_limits<int>::max())) return stems;
+    if (preparedPath.empty()) return stems;
 
-    Music m = LoadMusicStreamFromMemory(".wav", backing->data(), static_cast<int>(backing->size()));
+    const std::string preparedUtf8 = preparedPath.string();
+    Music m = LoadMusicStream(preparedUtf8.c_str());
     if (m.ctxData != nullptr) {
-        stems.push_back({m, dir / "<mixed opus stems>", backing});
+        stems.push_back({m, preparedPath, {}});
 #ifdef _WIN32
-        ggdiag::log("Loaded prepared Opus package from alpha.19 PCM cache");
+        ggdiag::log("Loaded prepared Opus package from persistent alpha.19 PCM cache");
 #endif
     }
     return stems;
@@ -323,11 +430,12 @@ static std::vector<Stem> loadPreviewStemsV13(const fs::path& dir, bool& dedicate
         if (!fs::is_regular_file(path, ec)) { ec.clear(); continue; }
         dedicatedPreview = true;
         if (lower(path.extension().string()) == ".opus") {
-            auto backing = preparedPreviewOpusV19(dir);
             if (!previewOpusPreparationFinishedV19(dir)) return {};
-            if (!backing || backing->size() > static_cast<size_t>(std::numeric_limits<int>::max())) continue;
-            Music music = LoadMusicStreamFromMemory(".wav", backing->data(), static_cast<int>(backing->size()));
-            if (music.ctxData != nullptr) return {{music, path, backing}};
+            const fs::path preparedPath = preparedPreviewOpusPathV19(dir);
+            if (preparedPath.empty()) continue;
+            const std::string preparedUtf8 = preparedPath.string();
+            Music music = LoadMusicStream(preparedUtf8.c_str());
+            if (music.ctxData != nullptr) return {{music, preparedPath, {}}};
         } else {
             const std::string utf8 = pathUtf8(path);
             Music music = LoadMusicStream(utf8.c_str());
@@ -338,10 +446,11 @@ static std::vector<Stem> loadPreviewStemsV13(const fs::path& dir, bool& dedicate
     dedicatedPreview = false;
     if (needsFullOpusPreparationV19(dir)) {
         if (!fullOpusPreparationFinishedV19(dir)) return {};
-        auto backing = preparedFullOpusV19(dir);
-        if (!backing || backing->size() > static_cast<size_t>(std::numeric_limits<int>::max())) return {};
-        Music music = LoadMusicStreamFromMemory(".wav", backing->data(), static_cast<int>(backing->size()));
-        if (music.ctxData != nullptr) return {{music, dir / "<preview mixed opus stems>", backing}};
+        const fs::path preparedPath = preparedFullOpusPathV19(dir);
+        if (preparedPath.empty()) return {};
+        const std::string preparedUtf8 = preparedPath.string();
+        Music music = LoadMusicStream(preparedUtf8.c_str());
+        if (music.ctxData != nullptr) return {{music, preparedPath, {}}};
         return {};
     }
     return loadStems(dir);
