@@ -13,16 +13,25 @@ $legacyPath = Join-Path $generatedDir 'main.cpp'
 $legacy = [System.IO.File]::ReadAllText($legacyPath)
 
 # ---------------------------------------------------------------------------
-# HOPO classification parity.
+# Per-song HOPO threshold compatibility.
 #
-# The compatibility parser already uses the CH/chart convention of 65 ticks at
-# resolution 192. The legacy parser still used resolution/3, which truncates to
-# 64 at 192 and incorrectly turns exact 65-tick HOPOs into strum notes.
+# Current builds already use chart_engine.h for natural HOPO inference. Honor
+# Clone Hero's song.ini hopo_threshold override for both .chart and MIDI loads.
 # ---------------------------------------------------------------------------
-$oldThreshold = 'const int64_t hopoThreshold = std::max<int64_t>(1, chart.resolution / 3);'
-$newThreshold = 'const int64_t hopoThreshold = std::max<int64_t>(1, static_cast<int64_t>(std::floor((65.0 / 192.0) * chart.resolution)));'
-if (-not $legacy.Contains($oldThreshold)) { throw 'Could not locate legacy HOPO threshold for alpha.22' }
-$legacy = $legacy.Replace($oldThreshold, $newThreshold)
+$chartCallOld = 'chart = parseChart(info.directory / "notes.chart", err);'
+$chartCallNew = 'chart = parseChart(info.directory / "notes.chart", err, info.hopoThresholdTicks);'
+if (-not $legacy.Contains($chartCallOld)) { throw 'Could not locate .chart load call for alpha.22 HOPO threshold metadata' }
+$legacy = $legacy.Replace($chartCallOld, $chartCallNew)
+
+$midiCallOld = 'chart = midichart::parse(info.directory / "notes.mid", err);'
+$midiCallNew = 'chart = midichart::parse(info.directory / "notes.mid", err, info.hopoThresholdTicks);'
+if (-not $legacy.Contains($midiCallOld)) { throw 'Could not locate notes.mid load call for alpha.22 HOPO threshold metadata' }
+$legacy = $legacy.Replace($midiCallOld, $midiCallNew)
+
+$midiLongCallOld = 'chart = midichart::parse(info.directory / "notes.midi", err);'
+$midiLongCallNew = 'chart = midichart::parse(info.directory / "notes.midi", err, info.hopoThresholdTicks);'
+if (-not $legacy.Contains($midiLongCallOld)) { throw 'Could not locate notes.midi load call for alpha.22 HOPO threshold metadata' }
+$legacy = $legacy.Replace($midiLongCallOld, $midiLongCallNew)
 
 # ---------------------------------------------------------------------------
 # Dense HOPO stream strumming.
@@ -86,4 +95,4 @@ $text = [System.IO.File]::ReadAllText($OutputPath)
 $text = $text.Replace('v0.1.0-alpha.21', 'v0.1.0-alpha.22')
 [System.IO.File]::WriteAllText($OutputPath, $text, [System.Text.UTF8Encoding]::new($false))
 
-Write-Host "Prepared alpha.22 HOPO boundary and dense-stream strum fixes: $OutputPath"
+Write-Host "Prepared alpha.22 per-song HOPO metadata and dense-stream strum fixes: $OutputPath"
