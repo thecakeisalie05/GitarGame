@@ -268,6 +268,7 @@ struct SongInfo {
     std::string name;
     std::string artist;
     float delayMs = 0.0f;
+    std::optional<int64_t> hopoThresholdTicks;
 };
 
 static SongInfo readSongInfo(const fs::path& dir) {
@@ -284,6 +285,12 @@ static SongInfo readSongInfo(const fs::path& dir) {
         if (key == "name" && !value.empty()) song.name = value;
         else if (key == "artist") song.artist = value;
         else if (key == "delay") { try { song.delayMs = std::stof(value); } catch (...) {} }
+        else if (key == "hopo_threshold") {
+            try {
+                const long long parsed = std::stoll(value);
+                if (parsed > 0) song.hopoThresholdTicks = static_cast<int64_t>(parsed);
+            } catch (...) {}
+        }
     }
     return song;
 }
