@@ -197,6 +197,10 @@ int main() {
         assert(chart->notes.size() == 3);
         assert(chart->notes[1].hopo);   // 65/192 is still a HOPO in CH-style charts.
         assert(!chart->notes[2].hopo);  // 66/192 is outside the threshold.
+
+        auto tighter = parseChart(path, error, int64_t{64});
+        assert(tighter);
+        assert(!tighter->notes[1].hopo); // song.ini hopo_threshold-style override wins.
     }
 
     {
